@@ -1,56 +1,133 @@
-# Welcome to your Expo app 👋
+# 🐼 Panda Strength
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikacja na iPhone'a do śledzenia treningu siłowego — wierny klon aplikacji typu **Strong / Stronger / Strive**. Logujesz serie na żywo, śledzisz postępy, bijesz rekordy.
 
-## Get started
+Zbudowana w **React Native + Expo (SDK 54)** + TypeScript, więc działa na iPhonie, choć powstała na Windowsie. Dane trzymane lokalnie (SQLite) — apka działa w pełni **offline**. Interfejs po polsku, domyślnie kilogramy (przełącznik na funty).
 
-1. Install dependencies
+> ℹ️ Projekt celowo używa **SDK 54** — to najnowsza wersja, którą wspiera **Expo Go z App Store** (Apple opóźnia zatwierdzanie nowszych Expo Go). Dzięki temu wystarczy zeskanować QR i apka działa, bez TestFlight ani konta Apple.
 
-   ```bash
+---
+
+## ✨ Co potrafi
+
+**Trening na żywo (serce apki)**
+- Tabela serii `Seria · Poprzednio · Kg · Powt. · ✓` jak w Strong
+- Kolumna **„Poprzednio"** automatycznie pokazuje wynik z ostatniej sesji (klucz do progresji)
+- Tap ✓ → wiersz zielenieje, wibracja, **automatyczny timer odpoczynku** + powiadomienie
+- **Kalkulator talerzy** — pokazuje, co założyć na sztangę
+- Typy serii (zwykła / rozgrzewkowa / drop / failure) — long-press na numerze serii
+- RPE / RIR, supersety, notatki
+- Różne typy ćwiczeń mają różne pola (sztanga: ciężar+powt.; plank: czas; bieg: dystans+czas)
+
+**Biblioteka ćwiczeń** — ~160 wbudowanych ćwiczeń po polsku, filtr po partii/sprzęcie, dodawanie własnych.
+
+**Rutyny** — twórz szablony treningów z docelowymi seriami i zaczynaj sesję jednym tapnięciem.
+
+**Historia** — wszystkie treningi z wolumenem, czasem i odznakami rekordów; podgląd, usuwanie, „powtórz trening".
+
+**Statystyki** — zbiorcze liczby („Wrapped"), wykres wolumenu w czasie, wolumen wg partii, szacowany **1RM** (wzór Epleya), oraz **Strength Score** (siła względem masy ciała: Początkujący → Światowa klasa).
+
+**Pomiary ciała**, **dark mode**, kg/lb, eksport danych do JSON.
+
+---
+
+## 🚀 Jak uruchomić na swoim iPhonie (za darmo, bez Maca)
+
+Aplikacja powstała na Windowsie. iOS natywnie buduje się tylko na macOS — dlatego do testów używamy **Expo Go**: darmowej aplikacji, która uruchamia kod prosto z Twojego komputera na telefonie. **Nie potrzebujesz Maca ani konta Apple.**
+
+### Krok po kroku
+
+1. **Na iPhonie** zainstaluj **Expo Go** z App Store:
+   👉 https://apps.apple.com/app/expo-go/id982107779
+
+2. **Na komputerze** (w folderze projektu) zainstaluj zależności (raz):
+   ```powershell
    npm install
    ```
 
-2. Start the app
-
-   ```bash
+3. Uruchom serwer deweloperski:
+   ```powershell
    npx expo start
    ```
+   W terminalu pojawi się **kod QR**.
 
-In the output, you'll find options to open the app in a
+4. **Zeskanuj kod QR** aparatem iPhone'a (lub z poziomu Expo Go).
+   > Telefon i komputer muszą być w tej samej sieci Wi-Fi. Jeśli QR nie działa (np. sieć firmowa), uruchom z tunelem:
+   > ```powershell
+   > npx expo start --tunnel
+   > ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+5. Aplikacja załaduje się na telefonie. Edytujesz kod na komputerze → zmiany pojawiają się na żywo.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Szybki test, że wszystko działa
+1. Zakładka **Trening** → „Rozpocznij pusty trening".
+2. „Dodaj ćwiczenie" → wybierz np. *Wyciskanie sztangi na ławce płaskiej*.
+3. Wpisz ciężar i powtórzenia, tap **✓** → wiersz zielenieje, rusza timer odpoczynku.
+4. „Zakończ" → zobacz podsumowanie (i rekord, bo to pierwszy raz 💪).
+5. Sprawdź zakładki **Historia** i **Statystyki**.
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 📲 Droga do App Store (gdy zechcesz opublikować)
 
-```bash
-npm run reset-project
+Można to zrobić **z Windowsa** dzięki chmurze Expo (EAS) — bez Maca. Jedyny koszt to konto **Apple Developer (99 USD/rok)**, wymagane przez Apple do publikacji.
+
+```powershell
+npm install -g eas-cli
+eas login                  # zaloguj się / załóż darmowe konto Expo
+eas build -p ios           # buduje plik .ipa w chmurze (poprosi o dane Apple)
+eas submit -p ios          # wysyła do TestFlight / App Store
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+`eas.json` jest już skonfigurowany (profile `development`, `preview`, `production`).
 
-### Other setup steps
+---
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## 🧑‍💻 Co musisz zrobić Ty (czego nie da się zautomatyzować)
 
-## Learn more
+| # | Działanie | Kiedy potrzebne |
+|---|-----------|-----------------|
+| 1 | Zainstalować **Expo Go** na iPhonie i zeskanować QR | Do darmowego testowania (teraz) |
+| 2 | Założyć darmowe konto **Expo** i `eas login` | Tylko jeśli chcesz budować przez chmurę |
+| 3 | Kupić **Apple Developer** (99 USD/rok) | Tylko do TestFlight / App Store |
+| 4 | Zatwierdzić podpisywanie Apple przy `eas build` | Tylko przy publikacji |
 
-To learn more about developing your project with Expo, look at the following resources:
+Wszystko inne — kod, baza, ekrany, logika — jest gotowe.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 🛠️ Stack techniczny
 
-Join our community of developers creating universal apps.
+| Warstwa | Technologia |
+|---------|-------------|
+| Framework | Expo SDK 54 · React Native 0.81 · TypeScript |
+| Nawigacja | expo-router (taby + ekrany modalne) |
+| Baza danych | expo-sqlite + Drizzle ORM (offline-first) |
+| Stan | Zustand (sesja treningu, ustawienia) |
+| Wykresy | react-native-gifted-charts |
+| Powiadomienia | expo-notifications (lokalne — timer odpoczynku) |
+| Haptyka | expo-haptics |
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📁 Struktura
+
+```
+src/
+├─ app/            ← ekrany (expo-router): (tabs), workout, routine, exercise, measurement
+├─ components/     ← UI + komponenty treningu (SetRow, ExerciseCard, RestTimerBar, ...)
+├─ db/             ← schema Drizzle, klient SQLite, repozytoria, seed, backup
+├─ lib/            ← czysta logika: 1RM, talerze, formatowanie, Strength Score, ...
+├─ store/          ← Zustand: aktywny trening, ustawienia
+├─ theme/          ← kolory, dark mode, tokeny
+└─ data/           ← ~160 wbudowanych ćwiczeń (PL)
+```
+
+## 🧪 Sprawdzanie poprawności
+
+```powershell
+npm test            # 55 testów logiki (1RM, talerze, konwersja kg/lb, Strength Score, ...)
+npm run typecheck   # kontrola typów TypeScript (0 błędów)
+```
+
+---
+
+*Panda Strength · offline-first tracker treningu siłowego · interfejs po polsku.*

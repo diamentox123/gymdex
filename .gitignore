@@ -5,6 +5,10 @@ node_modules/
 
 # Expo
 .expo/
+.expo-final/
+.expo-export*/
+.expo-sdk54-test/
+.expo-grad-test/
 dist/
 web-build/
 expo-env.d.ts
@@ -41,3 +45,21 @@ example
 # generated native folders
 /ios
 /android
+
+# IDE
+.idea/
+.vscode/
+
+# Lokalne dane użytkownika (prywatne — nie commitować)
+panda-backup.json
+strong_workouts.csv
+*.csv
+Plan treningowy*.pdf
+*.pdf
+
+# Robocze logi / artefakty dev-servera
+expo-*.log
+qr-expo.txt
+
+# Claude / harness lokalne
+.claude/scheduled_tasks.lock
