@@ -63,7 +63,23 @@ describe('nextProgression — double progression', () => {
     )!;
     expect(t.isIncrease).toBe(false);
     expect(t.weight).toBe(60);
-    expect(t.reps).toBe(9); // min(8)+1
+    expect(t.reps).toBe(12); // cel = górna granica zakresu (dobij każdą serię)
+  });
+
+  it('cel utrzymania nigdy nie jest niższy niż już zrobione powt.', () => {
+    // Realny przypadek użytkownika: 40×8, 40×7, 40×5 (zakres 8–12)
+    const t = nextProgression(
+      base({
+        lastSets: [
+          { weightKg: 40, reps: 8 },
+          { weightKg: 40, reps: 7 },
+          { weightKg: 40, reps: 5 },
+        ],
+      })
+    )!;
+    expect(t.isIncrease).toBe(false);
+    expect(t.weight).toBe(40);
+    expect(t.reps).toBe(12); // dąży do górnej granicy, NIE 6 (był bug min+1)
   });
 
   it('duży zapas (RIR≥3) na boju złożonym → podwójny skok', () => {

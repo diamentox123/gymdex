@@ -115,8 +115,10 @@ export function nextProgression(input: ProgressionInput): ProgressionTarget | nu
     };
   }
 
-  // 2) Nie osiągnięto góry → utrzymaj ciężar, celuj w +1 powtórzenie.
-  const target = Math.min(input.repRangeMax, minRepsAtTop + 1);
+  // 2) Nie osiągnięto góry zakresu na wszystkich seriach → utrzymaj ciężar,
+  // dąż, by KAŻDA seria sięgnęła górnej granicy zakresu (cel = repRangeMax).
+  // Najsłabsza seria na topowym ciężarze pokazuje, ile jeszcze brakuje.
+  const target = input.repRangeMax;
   // Jeśli ledwo domknięte (RIR 0) i nawet dolny zakres był ciężki → utrzymanie bez presji.
   const veryHard = rir != null && rir <= 0 && minRepsAtTop <= input.repRangeMin;
   return {
@@ -125,7 +127,7 @@ export function nextProgression(input: ProgressionInput): ProgressionTarget | nu
     isIncrease: false,
     reason: veryHard
       ? `Było ciężko — utrzymaj ciężar i ustabilizuj technikę, zanim dołożysz.`
-      : `Utrzymaj ciężar i dobij do ${target} powt. w każdej serii (potem podnieś).`,
+      : `Utrzymaj ciężar — dobij każdą serię do ${target} powt., potem dołóż ciężar.`,
   };
 }
 
