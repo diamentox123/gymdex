@@ -104,6 +104,15 @@ export default function WorkoutDetail() {
           <Stat label="Serie" value={String(workingSets)} />
         </View>
 
+        {full.notes ? (
+          <Card style={{ marginBottom: Spacing.md }}>
+            <Text variant="label" color={c.textSecondary} weight="700" style={{ marginBottom: 4 }}>
+              NOTATKA
+            </Text>
+            <Text variant="body">{full.notes}</Text>
+          </Card>
+        ) : null}
+
         {full.exercises.map((ex) => {
           const def = getExercise(ex.exerciseId);
           return (

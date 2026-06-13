@@ -51,6 +51,12 @@ describe('buildWorkoutInput — konwersja jednostek', () => {
     expect(input.exercises[0].sets[0].weight).toBeNull();
     expect(input.exercises[0].sets[0].reps).toBe(12);
   });
+
+  it('notatka treningu: trim, a pusta → null', () => {
+    expect(buildWorkoutInput('T', 0, 1000, null, [ex('100', '5')], 'kg', '  cięzki dzień  ').notes).toBe('cięzki dzień');
+    expect(buildWorkoutInput('T', 0, 1000, null, [ex('100', '5')], 'kg', '   ').notes).toBeNull();
+    expect(buildWorkoutInput('T', 0, 1000, null, [ex('100', '5')], 'kg').notes).toBeNull();
+  });
 });
 
 describe('liveTotals — wolumen w kg niezależnie od jednostki', () => {

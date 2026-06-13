@@ -55,7 +55,8 @@ export function buildWorkoutInput(
   finishedAt: number,
   routineId: string | null,
   exercises: LiveExercise[],
-  unit: Unit
+  unit: Unit,
+  notes: string | null = null
 ): WorkoutInput {
   const exInputs: ExerciseInput[] = exercises.map((ex) => {
     const sets: SetInput[] = ex.sets.map((s) => ({
@@ -81,7 +82,7 @@ export function buildWorkoutInput(
     name,
     startedAt,
     finishedAt,
-    notes: null,
+    notes: notes && notes.trim() ? notes.trim() : null,
     routineId,
     exercises: exInputs,
   };

@@ -42,6 +42,8 @@ export default function ActiveWorkout() {
   const startFromRoutine = useWorkout((s) => s.startFromRoutine);
   const cancel = useWorkout((s) => s.cancel);
   const setName = useWorkout((s) => s.setName);
+  const notes = useWorkout((s) => s.notes);
+  const setNotes = useWorkout((s) => s.setNotes);
   const addExercise = useWorkout((s) => s.addExercise);
   const startRest = useWorkout((s) => s.startRest);
   const toggleSetDone = useWorkout((s) => s.toggleSetDone);
@@ -133,7 +135,7 @@ export default function ActiveWorkout() {
       return;
     }
     const finishedAt = Date.now();
-    const input = buildWorkoutInput(name, startedAt ?? finishedAt, finishedAt, routineId, exercises, unit as never);
+    const input = buildWorkoutInput(name, startedAt ?? finishedAt, finishedAt, routineId, exercises, unit as never, notes);
     const { workoutId, newPRs } = saveCompletedWorkout(input);
     // Celebracja haptyczna jest w WorkoutSummary (rozróżnia rekord vs zwykły zapis).
     setSavedId(workoutId);
@@ -256,6 +258,18 @@ export default function ActiveWorkout() {
           style={{ marginTop: Spacing.sm }}
         />
 
+        {/* Notatka do treningu */}
+        {exercises.length > 0 ? (
+          <TextInput
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Notatka do treningu (np. samopoczucie, technika)…"
+            placeholderTextColor={c.textMuted}
+            multiline
+            style={[styles.notesInput, { color: c.text, backgroundColor: c.surface, borderColor: c.border }]}
+          />
+        ) : null}
+
         <Pressable onPress={confirmCancel} style={{ marginTop: Spacing.lg, alignItems: 'center' }}>
           <Text variant="label" color={c.danger} weight="700">
             Odrzuć trening
@@ -332,6 +346,15 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     paddingVertical: Spacing.xs,
+  },
+  notesInput: {
+    marginTop: Spacing.md,
+    minHeight: 64,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.md,
+    fontSize: 15,
+    textAlignVertical: 'top',
   },
   stats: {
     flexDirection: 'row',

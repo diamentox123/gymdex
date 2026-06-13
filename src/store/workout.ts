@@ -72,6 +72,7 @@ interface RestTimer {
 interface WorkoutState {
   active: boolean;
   name: string;
+  notes: string;
   startedAt: number | null;
   routineId: string | null;
   exercises: LiveExercise[];
@@ -82,6 +83,7 @@ interface WorkoutState {
   startFromRoutine: (routineId: string) => void;
   cancel: () => void;
   setName: (name: string) => void;
+  setNotes: (notes: string) => void;
 
   // --- Ćwiczenia ---
   addExercise: (exerciseId: string) => void;
@@ -155,6 +157,7 @@ const SET_TYPE_CYCLE: SetType[] = ['normal', 'warmup', 'drop', 'failure'];
 export const useWorkout = create<WorkoutState>((set, get) => ({
   active: false,
   name: '',
+  notes: '',
   startedAt: null,
   routineId: null,
   exercises: [],
@@ -164,6 +167,7 @@ export const useWorkout = create<WorkoutState>((set, get) => ({
     set({
       active: true,
       name: 'Trening',
+      notes: '',
       startedAt: Date.now(),
       routineId: null,
       exercises: [],
@@ -211,6 +215,7 @@ export const useWorkout = create<WorkoutState>((set, get) => ({
     set({
       active: true,
       name: routine.name,
+      notes: '',
       startedAt: Date.now(),
       routineId,
       exercises,
@@ -222,6 +227,7 @@ export const useWorkout = create<WorkoutState>((set, get) => ({
     set({
       active: false,
       name: '',
+      notes: '',
       startedAt: null,
       routineId: null,
       exercises: [],
@@ -230,6 +236,8 @@ export const useWorkout = create<WorkoutState>((set, get) => ({
   },
 
   setName: (name) => set({ name }),
+
+  setNotes: (notes) => set({ notes }),
 
   addExercise: (exerciseId) => {
     const restDefault = get().exercises[0]?.restSeconds ?? 120;
