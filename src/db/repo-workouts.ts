@@ -12,7 +12,7 @@ import {
 } from './schema';
 import { newId } from '@/lib/id';
 import { estimate1RM, setVolume } from '@/lib/calc';
-import { getExercise } from './repo-exercises';
+import { getExercise, getAllExercises } from './repo-exercises';
 import { nextProgression, isCompoundLift } from '@/lib/progression';
 import type { SetType, Unit } from '@/lib/types';
 
@@ -406,9 +406,11 @@ export function getAllRecords(): ExerciseRecord[] {
   const prs = db.select().from(personalRecords).orderBy(desc(personalRecords.achievedAt)).all();
   if (prs.length === 0) return [];
 
+  // Mapa ćwiczeń raz (unika N+1 zapytań przy wielu rekordach).
+  const exMap = new Map(getAllExercises().map((e) => [e.id, e]));
   const byExercise = new Map<string, ExerciseRecord>();
   for (const pr of prs) {
-    const ex = getExercise(pr.exerciseId);
+    const ex = exMap.get(pr.exerciseId);
     if (!ex) continue;
     let rec = byExercise.get(pr.exerciseId);
     if (!rec) {

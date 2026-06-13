@@ -109,6 +109,22 @@ describe('nextProgression — double progression', () => {
     expect(t.weight % 2.5).toBe(0);
   });
 
+  it('ramp-up: ostatnia (najcięższa) seria na górze zakresu → podnosi mimo lżejszych wcześniej', () => {
+    const t = nextProgression(
+      base({
+        exerciseId: 'przysiad-ze-sztanga',
+        repRangeMin: 5,
+        repRangeMax: 8,
+        lastSets: [
+          { weightKg: 80, reps: 5 }, // ramp
+          { weightKg: 90, reps: 5 }, // ramp
+          { weightKg: 100, reps: 8 }, // top set, górny zakres
+        ],
+      })
+    )!;
+    expect(t.isIncrease).toBe(true);
+  });
+
   it('zwraca null gdy brak serii z ciężarem', () => {
     expect(nextProgression(base({ lastSets: [{ weightKg: null, reps: 10 }] }))).toBeNull();
     expect(nextProgression(base({ lastSets: [] }))).toBeNull();
@@ -153,6 +169,11 @@ describe('percentTable', () => {
     const row100 = t.find((r) => r.pct === 100)!;
     expect(row100.weight).toBe(100);
     expect(row100.reps).toBe(1);
+  });
+
+  it('zwraca pustą tablicę dla 1RM ≤ 0 (brak NaN)', () => {
+    expect(percentTable(0, 'kg')).toEqual([]);
+    expect(percentTable(-5, 'kg')).toEqual([]);
   });
 
   it('niższy procent → więcej powtórzeń', () => {

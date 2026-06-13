@@ -1,6 +1,6 @@
 /** Zapytania zbiorcze do ekranu Statystyki + pomiary ciała. */
 import { eq, desc, asc, and, isNotNull } from 'drizzle-orm';
-import { getDb } from './client';
+import { getDb, getRawDb } from './client';
 import {
   workouts,
   workoutExercises,
@@ -11,7 +11,7 @@ import {
 } from './schema';
 import { newId } from '@/lib/id';
 import { setVolume, estimate1RM } from '@/lib/calc';
-import { getExercise } from './repo-exercises';
+import { getExercise, getAllExercises } from './repo-exercises';
 import type { BodyPart, SetType } from '@/lib/types';
 
 export interface OverallStats {
@@ -103,10 +103,12 @@ export function getVolumeByBodyPart(): { bodyPart: BodyPart; volume: number }[] 
     .where(eq(workoutSets.isCompleted, true))
     .all();
 
+  // Mapa ćwiczeń raz (zamiast getExercise per wiersz — unika N+1 zapytań).
+  const exMap = new Map(getAllExercises().map((e) => [e.id, e]));
   const byPart = new Map<BodyPart, number>();
   for (const r of rows) {
     if (r.setType === 'warmup') continue;
-    const ex = getExercise(r.exerciseId);
+    const ex = exMap.get(r.exerciseId);
     if (!ex) continue;
     const vol = setVolume(r.weight ?? 0, r.reps ?? 0, r.setType as SetType);
     byPart.set(ex.bodyPart, (byPart.get(ex.bodyPart) ?? 0) + vol);
@@ -189,8 +191,7 @@ export function getWorkoutBriefs(): WorkoutBrief[] {
 
 /** Łączna liczba pobitych rekordów życiowych (wszystkie typy). */
 export function getTotalPRCount(): number {
-  const r = getDb().select({ c: workouts.id }).from(personalRecords).all();
-  return r.length;
+  return getRawDb().getFirstSync<{ c: number }>('SELECT COUNT(*) AS c FROM personal_records')?.c ?? 0;
 }
 
 /** Czy istnieje trening rozpoczęty przed 7:00 / po 21:00 (osiągnięcia klimatyczne). */

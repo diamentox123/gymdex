@@ -89,19 +89,18 @@ export function nextProgression(input: ProgressionInput): ProgressionTarget | nu
   const topKg = Math.max(...working.map((s) => s.weightKg ?? 0));
   const setsAtTop = working.filter((s) => (s.weightKg ?? 0) === topKg);
   const minRepsAtTop = Math.min(...setsAtTop.map((s) => s.reps ?? 0));
-  const allReps = working.map((s) => s.reps ?? 0);
 
   const topUser = displayWeight(topKg, input.unit);
-  const inc = isCompoundLift(input.exerciseId)
-    ? displayWeight(minIncrementKg(input.equipment), input.unit)
-    : displayWeight(minIncrementKg(input.equipment), input.unit); // ten sam krok; różnicę robi decyzja niżej
+  // Bazowy krok przyrostu w jednostce użytkownika (podwojenie decydowane niżej).
+  const inc = displayWeight(minIncrementKg(input.equipment), input.unit);
 
   // Zapas siły z ostatniego topowego setu (RIR lub z RPE).
   const top = setsAtTop[0];
   const rir = top.rir ?? (top.rpe != null ? Math.max(0, 10 - top.rpe) : null);
 
-  // 1) Osiągnięto górę zakresu na WSZYSTKICH seriach → podnieś ciężar.
-  const hitTopAll = allReps.every((r) => r >= input.repRangeMax);
+  // 1) Osiągnięto górę zakresu na seriach z topowym ciężarem → podnieś ciężar.
+  // (Sprawdzamy tylko top set, by piramidy/ramp-up nie blokowały progresji.)
+  const hitTopAll = setsAtTop.every((s) => (s.reps ?? 0) >= input.repRangeMax);
   if (hitTopAll) {
     // Duży zapas (RIR ≥ 3) → podwójny krok na bojach złożonych.
     const bigJump = isCompoundLift(input.exerciseId) && rir != null && rir >= 3;
@@ -135,6 +134,7 @@ export function nextProgression(input: ProgressionInput): ProgressionTarget | nu
  * Zwraca pary (procent, ciężar w jednostce usera, ~powtórzenia wg Epleya odwrotnie).
  */
 export function percentTable(oneRmKg: number, unit: Unit): { pct: number; weight: number; reps: number }[] {
+  if (oneRmKg <= 0) return [];
   const pcts = [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50];
   // Odwrotność Epleya: reps ≈ 30 * (1RM/w - 1)
   return pcts.map((pct) => {

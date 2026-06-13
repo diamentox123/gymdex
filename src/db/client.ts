@@ -211,8 +211,8 @@ function seedIfEmpty(sqlite: SQLiteDatabase) {
 
   // Zawsze upewnij się, że istnieje wiersz ustawień.
   sqlite.runSync(
-    `INSERT OR IGNORE INTO settings (id, unit, language, theme, rest_default_sec, rest_auto_start, bar_weight_kg, haptics_enabled)
-     VALUES ('app', 'kg', 'pl', 'system', 120, 1, 20, 1)`
+    `INSERT OR IGNORE INTO settings (id, unit, language, theme, rest_default_sec, rest_auto_start, bar_weight_kg, haptics_enabled, weekly_goal)
+     VALUES ('app', 'kg', 'pl', 'system', 120, 1, 20, 1, 4)`
   );
 }
 

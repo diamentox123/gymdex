@@ -127,7 +127,11 @@ export function importData(raw: unknown): { inserted: Record<string, number> } {
     }
     throw err;
   } finally {
-    db.execSync('PRAGMA foreign_keys = ON');
+    try {
+      db.execSync('PRAGMA foreign_keys = ON');
+    } catch {
+      /* przywrócenie FK — najlepszy wysiłek */
+    }
   }
 
   return { inserted };

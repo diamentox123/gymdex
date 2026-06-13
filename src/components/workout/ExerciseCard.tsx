@@ -44,10 +44,13 @@ export function ExerciseCard({
   const fields = fieldsForInputType(ex.inputType);
   const canPlate = supportsPlateCalc(ex.inputType);
   // Podpowiedź progresji (cel na ten trening) — liczona raz na bazie historii.
-  const suggestion = useMemo(
-    () => getProgressionSuggestion(ex.exerciseId, unit as never),
-    [ex.exerciseId, unit]
-  );
+  const suggestion = useMemo(() => {
+    try {
+      return getProgressionSuggestion(ex.exerciseId, unit as never);
+    } catch {
+      return null;
+    }
+  }, [ex.exerciseId, unit]);
 
   return (
     <View

@@ -23,6 +23,14 @@ function startOfDay(ts: number): number {
   return d.getTime();
 }
 
+/** Początek poprzedniego dnia kalendarzowego (DST-safe — nie odejmuje stałych ms). */
+function prevDay(ts: number): number {
+  const d = new Date(ts);
+  d.setDate(d.getDate() - 1);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
 /** Numer tygodnia ISO-podobny: rok*100 + tydzień, do grupowania streaka. */
 function weekKey(ts: number): string {
   const d = new Date(ts);
@@ -47,12 +55,12 @@ export function currentDayStreak(workouts: WorkoutSummaryLike[], now: number = D
   const days = new Set(workouts.map((w) => startOfDay(w.startedAt)));
   const today = startOfDay(now);
   // Pozwól, by streak „trzymał się" jeśli ostatni trening był wczoraj.
-  let cursor = days.has(today) ? today : today - DAY_MS;
+  let cursor = days.has(today) ? today : prevDay(today);
   if (!days.has(cursor)) return 0;
   let streak = 0;
   while (days.has(cursor)) {
     streak++;
-    cursor -= DAY_MS;
+    cursor = prevDay(cursor);
   }
   return streak;
 }
@@ -64,17 +72,20 @@ export function longestDayStreak(workouts: WorkoutSummaryLike[]): number {
   let best = 1;
   let run = 1;
   for (let i = 1; i < days.length; i++) {
-    if (days[i] - days[i - 1] === DAY_MS) run++;
+    // Tolerancja na DST (doba 23/25h) — kolejny dzień, gdy różnica ≈ 1 doba.
+    const diff = days[i] - days[i - 1];
+    if (diff > DAY_MS * 0.5 && diff < DAY_MS * 1.5) run++;
     else run = 1;
     best = Math.max(best, run);
   }
   return best;
 }
 
-/** Liczba treningów w ostatnich 7 dniach (do celu tygodniowego). */
+/** Liczba treningów w ostatnich 7 dniach (do celu tygodniowego). Liczone jako
+ * okno 7 dni wstecz — intuicyjne dla apki (niedzielny trening liczy się w pon). */
 export function workoutsThisWeek(workouts: WorkoutSummaryLike[], now: number = Date.now()): number {
-  const wk = weekKey(now);
-  return workouts.filter((w) => weekKey(w.startedAt) === wk).length;
+  const cutoff = now - 7 * DAY_MS;
+  return workouts.filter((w) => w.startedAt >= cutoff && w.startedAt <= now).length;
 }
 
 /** Liczba odrębnych tygodni z przynajmniej jednym treningiem. */
