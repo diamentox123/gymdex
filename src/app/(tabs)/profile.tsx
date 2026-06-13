@@ -211,12 +211,22 @@ export default function ProfileTab() {
         <Text variant="heading" weight="800">
           Pomiary ciała
         </Text>
-        <Pressable onPress={() => router.push('/measurement/new')} hitSlop={8} style={styles.addBtn}>
-          <Icon name="add-circle" size={18} color={c.primary} />
-          <Text variant="label" color={c.primary} weight="700">
-            Dodaj
-          </Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
+          {measurements.length > 0 ? (
+            <Pressable onPress={() => router.push('/measurement/progress')} hitSlop={8} style={styles.addBtn}>
+              <Icon name="trending-up" size={18} color={c.primary} />
+              <Text variant="label" color={c.primary} weight="700">
+                Wykres
+              </Text>
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => router.push('/measurement/new')} hitSlop={8} style={styles.addBtn}>
+            <Icon name="add-circle" size={18} color={c.primary} />
+            <Text variant="label" color={c.primary} weight="700">
+              Dodaj
+            </Text>
+          </Pressable>
+        </View>
       </View>
       <Card padded={false} style={{ paddingVertical: Spacing.xs }}>
         {measurements.length === 0 ? (

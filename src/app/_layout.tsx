@@ -40,6 +40,7 @@ function Navigator() {
         <Stack.Screen name="exercise/picker" options={{ presentation: 'modal', title: 'Dodaj ćwiczenie' }} />
         <Stack.Screen name="exercise/new" options={{ presentation: 'modal', title: 'Nowe ćwiczenie' }} />
         <Stack.Screen name="measurement/new" options={{ presentation: 'modal', title: 'Pomiar ciała' }} />
+        <Stack.Screen name="measurement/progress" options={{ title: 'Pomiary ciała' }} />
       </Stack>
     </>
   );
