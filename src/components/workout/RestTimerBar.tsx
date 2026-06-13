@@ -10,7 +10,7 @@ import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { useWorkout } from '@/store/workout';
 import { formatDuration } from '@/lib/format';
-import { hapticSuccess } from '@/lib/haptics';
+import { hapticSuccess, hapticTick } from '@/lib/haptics';
 import { cancelRestNotification } from '@/lib/notifications';
 
 export function RestTimerBar() {
@@ -20,15 +20,25 @@ export function RestTimerBar() {
   const addRestTime = useWorkout((s) => s.addRestTime);
   const [now, setNow] = useState(Date.now());
   const firedRef = useRef(false);
+  const lastTickRef = useRef<number>(-1);
 
   useEffect(() => {
     if (!rest.active) return;
     firedRef.current = false;
+    lastTickRef.current = -1;
     const interval = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(interval);
   }, [rest.active, rest.endsAt]);
 
   const remaining = Math.max(0, Math.ceil((rest.endsAt - now) / 1000));
+
+  // Odliczanie czuć: lekki tick w ostatnich 3 sekundach (1 raz na sekundę).
+  useEffect(() => {
+    if (rest.active && remaining > 0 && remaining <= 3 && lastTickRef.current !== remaining) {
+      lastTickRef.current = remaining;
+      hapticTick();
+    }
+  }, [rest.active, remaining]);
 
   useEffect(() => {
     if (rest.active && remaining === 0 && !firedRef.current) {
