@@ -12,10 +12,12 @@ import { Icon } from '@/components/Icon';
 import { useTheme, Spacing } from '@/theme';
 import { getWorkoutFull, deleteWorkout } from '@/db/repo-workouts';
 import { getExercise } from '@/db/repo-exercises';
+import { saveRoutine } from '@/db/repo-routines';
 import { totalVolume } from '@/lib/calc';
 import { formatWorkoutLength, formatVolume, formatSetsCount, formatWeight } from '@/lib/format';
 import { useSettings } from '@/store/settings';
 import { useWorkout } from '@/store/workout';
+import { hapticSuccess } from '@/lib/haptics';
 import type { SetType } from '@/lib/types';
 
 dayjs.locale('pl');
@@ -68,6 +70,26 @@ export default function WorkoutDetail() {
     router.replace('/workout/active');
   };
 
+  const onSaveAsRoutine = () => {
+    saveRoutine({
+      name: full.name,
+      exercises: full.exercises.map((e) => ({
+        exerciseId: e.exerciseId,
+        restSeconds: e.restSeconds,
+        supersetGroup: e.supersetGroup,
+        sets: e.sets
+          .filter((s) => s.setType !== 'warmup')
+          .map((s) => ({
+            targetReps: s.reps,
+            targetWeight: s.weight,
+            setType: s.setType as SetType,
+          })),
+      })),
+    });
+    hapticSuccess();
+    Alert.alert('Zapisano rutynę', `„${full.name}" jest teraz dostępna jako rutyna na ekranie Trening.`);
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: full.name }} />
@@ -110,6 +132,13 @@ export default function WorkoutDetail() {
           icon={<Icon name="refresh" size={20} color={c.onPrimary} />}
           onPress={onRepeat}
           style={{ marginTop: Spacing.md }}
+        />
+        <Button
+          title="Zapisz jako rutynę"
+          variant="secondary"
+          icon={<Icon name="bookmark-outline" size={18} color={c.text} />}
+          onPress={onSaveAsRoutine}
+          style={{ marginTop: Spacing.sm }}
         />
         <Button title="Usuń trening" variant="ghost" onPress={onDelete} style={{ marginTop: Spacing.sm }} />
       </ScrollView>
