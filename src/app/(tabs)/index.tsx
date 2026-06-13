@@ -10,16 +10,25 @@ import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { useWorkout } from '@/store/workout';
 import { getAllRoutines, routineExerciseCount, deleteRoutine } from '@/db/repo-routines';
+import { getWorkoutBriefs } from '@/db/repo-stats';
+import { currentDayStreak, workoutsThisWeek } from '@/lib/achievements';
 import type { RoutineRow } from '@/db/schema';
 import { Alert } from 'react-native';
+
+const WEEKLY_GOAL = 4; // domyślny cel treningów / tydzień
 
 export default function TrainingTab() {
   const { c } = useTheme();
   const router = useRouter();
   const active = useWorkout((s) => s.active);
   const [routines, setRoutines] = useState<RoutineRow[]>([]);
+  const [week, setWeek] = useState({ done: 0, streak: 0 });
 
-  const reload = useCallback(() => setRoutines(getAllRoutines()), []);
+  const reload = useCallback(() => {
+    setRoutines(getAllRoutines());
+    const briefs = getWorkoutBriefs();
+    setWeek({ done: workoutsThisWeek(briefs), streak: currentDayStreak(briefs) });
+  }, []);
   useFocusEffect(useCallback(() => reload(), [reload]));
 
   const startEmpty = () => router.push('/workout/active');
@@ -50,6 +59,43 @@ export default function TrainingTab() {
           <Button title="Wróć do treningu" onPress={resumeWorkout} style={{ marginTop: Spacing.md }} />
         </Card>
       ) : null}
+
+      {/* Cel tygodniowy + seria */}
+      <Card style={{ marginBottom: Spacing.lg }}>
+        <View style={styles.weekHead}>
+          <View>
+            <Text variant="label" color={c.textSecondary} weight="700">
+              TEN TYDZIEŃ
+            </Text>
+            <Text variant="title" weight="800" style={{ marginTop: 2 }}>
+              {week.done} / {WEEKLY_GOAL} treningów
+            </Text>
+          </View>
+          {week.streak > 0 ? (
+            <View style={styles.streakPill}>
+              <Icon name="flame" size={16} color={c.primary} />
+              <Text variant="label" weight="800" color={c.primary}>
+                {week.streak} {week.streak === 1 ? 'dzień' : 'dni'}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <View style={[styles.goalTrack, { backgroundColor: c.surfaceAlt }]}>
+          <View
+            style={{
+              width: `${Math.min(100, (week.done / WEEKLY_GOAL) * 100)}%`,
+              height: '100%',
+              backgroundColor: week.done >= WEEKLY_GOAL ? c.success : c.primary,
+              borderRadius: Radius.pill,
+            }}
+          />
+        </View>
+        {week.done >= WEEKLY_GOAL ? (
+          <Text variant="caption" color={c.success} style={{ marginTop: Spacing.sm }}>
+            Cel tygodnia osiągnięty! 💪
+          </Text>
+        ) : null}
+      </Card>
 
       <Button
         title="Rozpocznij pusty trening"
@@ -134,4 +180,7 @@ const styles = StyleSheet.create({
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   routineRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   smallBtn: { padding: Spacing.xs },
+  weekHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: Spacing.md },
+  streakPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  goalTrack: { height: 10, borderRadius: Radius.pill, overflow: 'hidden' },
 });
