@@ -2,7 +2,7 @@
  * Podsumowanie po zakończeniu treningu: czas, wolumen, serie i nowe
  * rekordy życiowe. Daje też skrót do zapisania treningu jako rutyny.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Modal, ScrollView, StyleSheet } from 'react-native';
 import { Text, Button, Divider } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -10,6 +10,7 @@ import { useTheme, Spacing, Radius } from '@/theme';
 import { formatWorkoutLength, formatVolume, formatSetsCount, formatWeight } from '@/lib/format';
 import { useSettings } from '@/store/settings';
 import { getExercise } from '@/db/repo-exercises';
+import { hapticSuccess, hapticTick } from '@/lib/haptics';
 import type { NewPR } from '@/db/repo-workouts';
 
 const PR_LABEL: Record<NewPR['type'], string> = {
@@ -37,16 +38,31 @@ export function WorkoutSummary({
 }) {
   const { c } = useTheme();
   const unit = useSettings((s) => s.settings?.unit ?? 'kg');
+  const hasPRs = prs.length > 0;
+
+  // Celebracja: mocniejsza haptyka gdy padły rekordy.
+  useEffect(() => {
+    if (hasPRs) {
+      hapticSuccess();
+      const t1 = setTimeout(() => hapticTick(), 160);
+      const t2 = setTimeout(() => hapticTick(), 300);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+    hapticSuccess();
+  }, [hasPRs]);
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={[styles.sheet, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <View style={[styles.trophy, { backgroundColor: c.successMuted }]}>
-            <Icon name="trophy" size={36} color={c.success} />
+          <View style={[styles.trophy, { backgroundColor: hasPRs ? c.pr + '22' : c.successMuted }]}>
+            <Icon name={hasPRs ? 'ribbon' : 'trophy'} size={36} color={hasPRs ? c.pr : c.success} />
           </View>
           <Text variant="title" weight="800" center>
-            Trening zapisany!
+            {hasPRs ? `Nowy rekord! 🎉` : 'Trening zapisany!'}
           </Text>
           <Text variant="body" color={c.textSecondary} center style={{ marginTop: 4 }}>
             {name}

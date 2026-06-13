@@ -21,7 +21,7 @@ import { useSettings } from '@/store/settings';
 import { liveTotals, buildWorkoutInput, hasCompletedSets } from '@/lib/workout-session';
 import { saveCompletedWorkout, type NewPR } from '@/db/repo-workouts';
 import { formatDuration, formatVolume, formatSetsCount } from '@/lib/format';
-import { hapticSuccess, hapticTick } from '@/lib/haptics';
+import { hapticTick } from '@/lib/haptics';
 import { scheduleRestDone, ensureNotificationPermission } from '@/lib/notifications';
 import { pendingPicked, clearPicked } from '@/lib/picker-bridge';
 
@@ -135,7 +135,7 @@ export default function ActiveWorkout() {
     const finishedAt = Date.now();
     const input = buildWorkoutInput(name, startedAt ?? finishedAt, finishedAt, routineId, exercises, unit as never);
     const { workoutId, newPRs } = saveCompletedWorkout(input);
-    hapticSuccess();
+    // Celebracja haptyczna jest w WorkoutSummary (rozróżnia rekord vs zwykły zapis).
     setSavedId(workoutId);
     setSummary({ prs: newPRs, durationSec: Math.round((finishedAt - (startedAt ?? finishedAt)) / 1000) });
   };
