@@ -2,7 +2,7 @@
  * Karta jednego ćwiczenia w aktywnym treningu: nagłówek + tabela serii +
  * akcje (dodaj serię, kalkulator talerzy, szybkie ±, usuń, superseria).
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Text, Divider } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -13,6 +13,8 @@ import { useWorkout, type LiveExercise } from '@/store/workout';
 import { useSettings } from '@/store/settings';
 import { fieldsForInputType, supportsPlateCalc, weightColumnLabel } from '@/lib/input-schema';
 import { toKg } from '@/lib/calc';
+import { getProgressionSuggestion } from '@/db/repo-workouts';
+import { trimNumber } from '@/lib/format';
 
 export function ExerciseCard({
   ex,
@@ -41,6 +43,11 @@ export function ExerciseCard({
 
   const fields = fieldsForInputType(ex.inputType);
   const canPlate = supportsPlateCalc(ex.inputType);
+  // Podpowiedź progresji (cel na ten trening) — liczona raz na bazie historii.
+  const suggestion = useMemo(
+    () => getProgressionSuggestion(ex.exerciseId, unit as never),
+    [ex.exerciseId, unit]
+  );
 
   return (
     <View
@@ -64,6 +71,14 @@ export function ExerciseCard({
           <Text variant="heading" color={c.primary} numberOfLines={2}>
             {ex.name}
           </Text>
+          {suggestion ? (
+            <View style={styles.target}>
+              <Icon name={suggestion.isIncrease ? 'trending-up' : 'flag'} size={12} color={suggestion.isIncrease ? c.success : c.textSecondary} />
+              <Text variant="caption" color={suggestion.isIncrease ? c.success : c.textSecondary} weight="600">
+                Cel: {trimNumber(suggestion.weight)} {unit} × {suggestion.reps}
+              </Text>
+            </View>
+          ) : null}
         </View>
         <Pressable onPress={() => setMenuOpen((o) => !o)} hitSlop={8} style={styles.menuBtn}>
           <Icon name="ellipsis-horizontal" size={20} color={c.textSecondary} />
@@ -193,6 +208,12 @@ const styles = StyleSheet.create({
   },
   menuBtn: {
     padding: Spacing.xs,
+  },
+  target: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
   },
   menu: {
     borderRadius: Radius.md,
