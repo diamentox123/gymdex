@@ -6,7 +6,12 @@ name: Build Unsigned IPA (SideStore)
 # Gotowy .ipa pobierasz z artefaktów po zakończeniu (~15 min).
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/unsigned-ipa.yml'
 
 jobs:
   build:
