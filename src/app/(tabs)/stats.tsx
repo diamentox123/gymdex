@@ -84,10 +84,13 @@ export default function StatsTab() {
         <Tile icon="time" value={formatWorkoutLength(stats.totalDurationSec)} label="łącznie czasu" />
       </View>
 
-      {/* Skróty do osiągnięć i narzędzi */}
+      {/* Skróty do osiągnięć, rekordów i narzędzi */}
       <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
         <NavTile icon="medal" label="Osiągnięcia" onPress={() => router.push('/achievements')} />
-        <NavTile icon="calculator" label="Narzędzia" onPress={() => router.push('/tools')} />
+        <NavTile icon="trophy" label="Rekordy" onPress={() => router.push('/records')} />
+      </View>
+      <View style={{ marginTop: Spacing.sm }}>
+        <NavTile icon="calculator" label="Narzędzia (1RM, talerze, %)" onPress={() => router.push('/tools')} />
       </View>
 
       {/* Strength Score */}

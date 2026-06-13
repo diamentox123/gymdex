@@ -387,6 +387,55 @@ export function getBestPR(exerciseId: string, type: NewPR['type']): { value: num
   return r ? { value: r.value, weight: r.weight, reps: r.reps } : null;
 }
 
+export interface ExerciseRecord {
+  exerciseId: string;
+  exerciseName: string;
+  bodyPart: string;
+  best1RM: number; // kg
+  maxWeight: number; // kg
+  maxWeightReps: number | null;
+  achievedAt: number;
+}
+
+/**
+ * Najlepsze rekordy dla KAŻDEGO ćwiczenia, które ma jakikolwiek PR.
+ * Do ekranu „Rekordy" (hub). Sortowane wg najświeższego osiągnięcia.
+ */
+export function getAllRecords(): ExerciseRecord[] {
+  const db = getDb();
+  const prs = db.select().from(personalRecords).orderBy(desc(personalRecords.achievedAt)).all();
+  if (prs.length === 0) return [];
+
+  const byExercise = new Map<string, ExerciseRecord>();
+  for (const pr of prs) {
+    const ex = getExercise(pr.exerciseId);
+    if (!ex) continue;
+    let rec = byExercise.get(pr.exerciseId);
+    if (!rec) {
+      rec = {
+        exerciseId: pr.exerciseId,
+        exerciseName: ex.name,
+        bodyPart: ex.bodyPart,
+        best1RM: 0,
+        maxWeight: 0,
+        maxWeightReps: null,
+        achievedAt: pr.achievedAt,
+      };
+      byExercise.set(pr.exerciseId, rec);
+    }
+    if (pr.type === '1rm') rec.best1RM = Math.max(rec.best1RM, pr.value);
+    if (pr.type === 'maxWeight') {
+      if ((pr.weight ?? pr.value) > rec.maxWeight) {
+        rec.maxWeight = pr.weight ?? pr.value;
+        rec.maxWeightReps = pr.reps;
+      }
+    }
+    rec.achievedAt = Math.max(rec.achievedAt, pr.achievedAt);
+  }
+
+  return [...byExercise.values()].sort((a, b) => b.achievedAt - a.achievedAt);
+}
+
 // ===================== WYKRESY =====================
 
 export interface ProgressPoint {
