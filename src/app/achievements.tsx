@@ -21,8 +21,10 @@ import {
   longestDayStreak,
   activeWeeks,
   avgWorkoutsPerWeek,
+  buildHeatmap,
   type Achievement,
 } from '@/lib/achievements';
+import { Heatmap } from '@/components/Heatmap';
 
 const TIER_COLOR: Record<Achievement['tier'], string> = {
   'brąz': '#CD7F32',
@@ -55,6 +57,8 @@ export default function AchievementsScreen() {
       currentStreak: currentDayStreak(briefs),
       longest,
       avgPerWeek: avgWorkoutsPerWeek(briefs),
+      heatmap: buildHeatmap(briefs, 16),
+      hasData: briefs.length > 0,
     };
   }, []);
 
@@ -68,6 +72,16 @@ export default function AchievementsScreen() {
           <StreakTile icon="trophy" value={String(data.longest)} label="rekord serii" color={TIER_COLOR['złoto']} />
           <StreakTile icon="repeat" value={data.avgPerWeek.toFixed(1)} label="śr. / tydzień" color={c.success} />
         </View>
+
+        {/* Heatmapa aktywności */}
+        {data.hasData ? (
+          <Card style={{ marginTop: Spacing.lg }}>
+            <Text variant="label" weight="700" color={c.textSecondary} style={{ marginBottom: Spacing.md }}>
+              AKTYWNOŚĆ (16 TYGODNI)
+            </Text>
+            <Heatmap grid={data.heatmap} />
+          </Card>
+        ) : null}
 
         {/* Postęp odznak */}
         <Card style={{ marginTop: Spacing.lg }}>

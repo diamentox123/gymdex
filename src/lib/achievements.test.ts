@@ -7,6 +7,7 @@ import {
   avgWorkoutsPerWeek,
   computeAchievements,
   achievementScore,
+  buildHeatmap,
   type WorkoutSummaryLike,
 } from './achievements';
 
@@ -128,5 +129,31 @@ describe('computeAchievements', () => {
     expect(score.total).toBe(list.length);
     expect(score.unlocked).toBeGreaterThan(0);
     expect(score.unlocked).toBeLessThan(score.total);
+  });
+});
+
+describe('buildHeatmap', () => {
+  const now = new Date('2026-06-13T12:00:00').getTime();
+
+  it('zwraca weeks kolumn po 7 dni', () => {
+    const grid = buildHeatmap([], 16, now);
+    expect(grid).toHaveLength(16);
+    expect(grid.every((col) => col.length === 7)).toBe(true);
+  });
+
+  it('zlicza treningi w odpowiednim dniu i nadaje poziom', () => {
+    const grid = buildHeatmap([w(0, now), w(0, now), w(1, now)], 4, now);
+    const flat = grid.flat();
+    const today = flat.find((d) => d.count === 2);
+    expect(today).toBeTruthy();
+    expect(today!.level).toBe(2);
+    expect(flat.some((d) => d.count === 1 && d.level === 1)).toBe(true);
+  });
+
+  it('przyszłe dni mają count 0', () => {
+    const grid = buildHeatmap([], 2, now);
+    const last = grid[grid.length - 1];
+    // któreś dni bieżącego tygodnia są w przyszłości (sobota → niedziela)
+    expect(last.every((d) => d.count === 0)).toBe(true);
   });
 });

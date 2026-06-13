@@ -202,3 +202,46 @@ export function computeAchievements(args: {
 export function achievementScore(list: Achievement[]): { unlocked: number; total: number } {
   return { unlocked: list.filter((a) => a.unlocked).length, total: list.length };
 }
+
+export interface HeatmapDay {
+  ts: number; // początek dnia
+  count: number; // liczba treningów tego dnia
+  /** Intensywność 0..3 do koloru komórki. */
+  level: 0 | 1 | 2 | 3;
+}
+
+/**
+ * Buduje siatkę aktywności (heatmapę à la GitHub) dla ostatnich `weeks`
+ * tygodni: tablica tygodni, każdy = 7 dni (pon→niedz). Ostatnia kolumna to
+ * bieżący tydzień. Dni spoza zakresu/przyszłe mają count 0.
+ */
+export function buildHeatmap(
+  workouts: WorkoutSummaryLike[],
+  weeks = 16,
+  now: number = Date.now()
+): HeatmapDay[][] {
+  const perDay = new Map<number, number>();
+  for (const w of workouts) {
+    const d = startOfDay(w.startedAt);
+    perDay.set(d, (perDay.get(d) ?? 0) + 1);
+  }
+
+  const today = startOfDay(now);
+  // Znajdź poniedziałek bieżącego tygodnia.
+  const dow = (new Date(today).getDay() + 6) % 7; // pon=0
+  const mondayThisWeek = today - dow * DAY_MS;
+  const startMonday = mondayThisWeek - (weeks - 1) * 7 * DAY_MS;
+
+  const grid: HeatmapDay[][] = [];
+  for (let wk = 0; wk < weeks; wk++) {
+    const col: HeatmapDay[] = [];
+    for (let d = 0; d < 7; d++) {
+      const ts = startMonday + (wk * 7 + d) * DAY_MS;
+      const count = ts > today ? 0 : perDay.get(ts) ?? 0;
+      const level: HeatmapDay['level'] = count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3;
+      col.push({ ts, count, level });
+    }
+    grid.push(col);
+  }
+  return grid;
+}
