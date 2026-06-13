@@ -127,6 +127,7 @@ export const settings = sqliteTable('settings', {
   restAutoStart: integer('rest_auto_start', { mode: 'boolean' }).notNull().default(true),
   barWeightKg: real('bar_weight_kg').notNull().default(20),
   hapticsEnabled: integer('haptics_enabled', { mode: 'boolean' }).notNull().default(true),
+  weeklyGoal: integer('weekly_goal').notNull().default(4),
 });
 
 // Typy wnioskowane — używane w warstwie zapytań i UI.

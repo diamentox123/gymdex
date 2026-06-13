@@ -128,7 +128,8 @@ CREATE TABLE IF NOT EXISTS settings (
   rest_default_sec INTEGER NOT NULL DEFAULT 120,
   rest_auto_start INTEGER NOT NULL DEFAULT 1,
   bar_weight_kg REAL NOT NULL DEFAULT 20,
-  haptics_enabled INTEGER NOT NULL DEFAULT 1
+  haptics_enabled INTEGER NOT NULL DEFAULT 1,
+  weekly_goal INTEGER NOT NULL DEFAULT 4
 );
 
 CREATE INDEX IF NOT EXISTS idx_we_workout ON workout_exercises(workout_id);
@@ -146,9 +147,26 @@ export function getDb(): ExpoSQLiteDatabase<typeof schema> {
   if (_db) return _db;
   _sqlite = openDatabaseSync(DB_NAME);
   _sqlite.execSync(DDL);
+  runMigrations(_sqlite);
   _db = drizzle(_sqlite, { schema });
   seedIfEmpty(_sqlite);
   return _db;
+}
+
+/**
+ * Lekkie migracje dla baz utworzonych przed dodaniem kolumny. `CREATE TABLE
+ * IF NOT EXISTS` nie dodaje kolumn do istniejących tabel, więc dokładamy je
+ * ręcznie. `ADD COLUMN` rzuca błąd, gdy kolumna już jest — łapiemy i ignorujemy.
+ */
+function runMigrations(sqlite: SQLiteDatabase) {
+  const addColumn = (sql: string) => {
+    try {
+      sqlite.execSync(sql);
+    } catch {
+      /* kolumna już istnieje — OK */
+    }
+  };
+  addColumn('ALTER TABLE settings ADD COLUMN weekly_goal INTEGER NOT NULL DEFAULT 4');
 }
 
 /** Surowy uchwyt SQLite — dla operacji wsadowych (seed, eksport). */

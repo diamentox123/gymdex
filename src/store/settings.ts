@@ -20,6 +20,7 @@ interface SettingsState {
   barWeight: () => number;
   haptics: () => boolean;
   autoStartRest: () => boolean;
+  weeklyGoal: () => number;
 }
 
 export const useSettings = create<SettingsState>((set, get) => ({
@@ -39,4 +40,5 @@ export const useSettings = create<SettingsState>((set, get) => ({
   barWeight: () => get().settings?.barWeightKg ?? 20,
   haptics: () => get().settings?.hapticsEnabled ?? true,
   autoStartRest: () => get().settings?.restAutoStart ?? true,
+  weeklyGoal: () => get().settings?.weeklyGoal ?? 4,
 }));

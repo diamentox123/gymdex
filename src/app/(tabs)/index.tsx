@@ -9,18 +9,18 @@ import { Text, Button, Card, EmptyState } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { useWorkout } from '@/store/workout';
+import { useSettings } from '@/store/settings';
 import { getAllRoutines, routineExerciseCount, deleteRoutine } from '@/db/repo-routines';
 import { getWorkoutBriefs } from '@/db/repo-stats';
 import { currentDayStreak, workoutsThisWeek } from '@/lib/achievements';
 import type { RoutineRow } from '@/db/schema';
 import { Alert } from 'react-native';
 
-const WEEKLY_GOAL = 4; // domyślny cel treningów / tydzień
-
 export default function TrainingTab() {
   const { c } = useTheme();
   const router = useRouter();
   const active = useWorkout((s) => s.active);
+  const weeklyGoal = useSettings((s) => s.settings?.weeklyGoal ?? 4);
   const [routines, setRoutines] = useState<RoutineRow[]>([]);
   const [week, setWeek] = useState({ done: 0, streak: 0 });
 
@@ -68,7 +68,7 @@ export default function TrainingTab() {
               TEN TYDZIEŃ
             </Text>
             <Text variant="title" weight="800" style={{ marginTop: 2 }}>
-              {week.done} / {WEEKLY_GOAL} treningów
+              {week.done} / {weeklyGoal} treningów
             </Text>
           </View>
           {week.streak > 0 ? (
@@ -83,14 +83,14 @@ export default function TrainingTab() {
         <View style={[styles.goalTrack, { backgroundColor: c.surfaceAlt }]}>
           <View
             style={{
-              width: `${Math.min(100, (week.done / WEEKLY_GOAL) * 100)}%`,
+              width: `${Math.min(100, (week.done / weeklyGoal) * 100)}%`,
               height: '100%',
-              backgroundColor: week.done >= WEEKLY_GOAL ? c.success : c.primary,
+              backgroundColor: week.done >= weeklyGoal ? c.success : c.primary,
               borderRadius: Radius.pill,
             }}
           />
         </View>
-        {week.done >= WEEKLY_GOAL ? (
+        {week.done >= weeklyGoal ? (
           <Text variant="caption" color={c.success} style={{ marginTop: Spacing.sm }}>
             Cel tygodnia osiągnięty! 💪
           </Text>

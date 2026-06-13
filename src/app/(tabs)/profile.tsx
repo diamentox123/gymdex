@@ -180,6 +180,13 @@ export default function ProfileTab() {
       {/* Trening */}
       <Section title="Trening">
         <Stepper
+          label="Cel treningów / tydzień"
+          value={String(settings?.weeklyGoal ?? 4)}
+          onMinus={() => update({ weeklyGoal: Math.max(1, (settings?.weeklyGoal ?? 4) - 1) })}
+          onPlus={() => update({ weeklyGoal: Math.min(14, (settings?.weeklyGoal ?? 4) + 1) })}
+        />
+        <Divider style={{ marginVertical: Spacing.sm }} />
+        <Stepper
           label="Domyślny odpoczynek"
           value={`${settings?.restDefaultSec ?? 120}s`}
           onMinus={() => setRest(-15)}
