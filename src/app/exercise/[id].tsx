@@ -2,12 +2,12 @@
  * Szczegóły ćwiczenia: opis, rekordy życiowe, wykres szacowanego 1RM
  * w czasie. Z poziomu biblioteki.
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, View, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import dayjs from 'dayjs';
-import { Text, Card, Divider, Button } from '@/components/ui';
+import { Text, Card, Divider, Button, Chip } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { getExerciseGuide, guideImageUrls } from '@/data/exercise-guide';
@@ -30,6 +30,7 @@ export default function ExerciseDetail() {
   const pr1rm = useMemo(() => (id ? getBestPR(String(id), '1rm') : null), [id]);
   const prWeight = useMemo(() => (id ? getBestPR(String(id), 'maxWeight') : null), [id]);
   const suggestion = useMemo(() => (id ? getProgressionSuggestion(String(id), unit as never) : null), [id, unit]);
+  const [metric, setMetric] = useState<'e1rm' | 'topWeight' | 'volume'>('e1rm');
 
   if (!ex) {
     return (
@@ -41,10 +42,12 @@ export default function ExerciseDetail() {
     );
   }
 
+  const isWeightMetric = metric !== 'volume';
   const chartData = progress.map((p) => ({
-    value: Math.round(displayWeight(p.e1rm, unit as never)),
+    value: Math.round(displayWeight(p[metric], unit as never)),
     label: dayjs(p.date).format('DD.MM'),
   }));
+  const metricLabel = metric === 'e1rm' ? 'szac. 1RM' : metric === 'topWeight' ? 'maks. ciężar' : 'wolumen';
 
   const onDelete = () => {
     Alert.alert(
@@ -153,12 +156,17 @@ export default function ExerciseDetail() {
           />
         </Card>
 
-        {/* Wykres postępu 1RM */}
+        {/* Wykres postępu — przełączany */}
         <Text variant="heading" weight="800" style={{ marginTop: Spacing.xl, marginBottom: Spacing.md }}>
-          Postęp (szac. 1RM)
+          Postęp ({metricLabel})
         </Text>
+        <View style={{ flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.md }}>
+          <Chip label="Szac. 1RM" active={metric === 'e1rm'} onPress={() => setMetric('e1rm')} />
+          <Chip label="Maks. ciężar" active={metric === 'topWeight'} onPress={() => setMetric('topWeight')} />
+          <Chip label="Wolumen" active={metric === 'volume'} onPress={() => setMetric('volume')} />
+        </View>
         <Card>
-          <LineProgressChart data={chartData} suffix={` ${unit}`} />
+          <LineProgressChart data={chartData} suffix={isWeightMetric ? ` ${unit}` : ''} />
         </Card>
 
         <Text variant="caption" color={c.textMuted} center style={{ marginTop: Spacing.lg }}>
