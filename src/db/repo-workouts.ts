@@ -12,7 +12,9 @@ import {
 } from './schema';
 import { newId } from '@/lib/id';
 import { estimate1RM, setVolume } from '@/lib/calc';
-import type { SetType } from '@/lib/types';
+import { getExercise } from './repo-exercises';
+import { nextProgression, isCompoundLift } from '@/lib/progression';
+import type { SetType, Unit } from '@/lib/types';
 
 // ---- Typy złożone ----
 export interface WorkoutExerciseFull extends WorkoutExerciseRow {
@@ -214,6 +216,35 @@ export function getLastPerformance(exerciseId: string): PreviousSet[] {
     .all();
 
   return sets.map((s) => ({ weight: s.weight, reps: s.reps, setType: s.setType as SetType }));
+}
+
+/**
+ * Podpowiedź progresji dla ćwiczenia na NADCHODZĄCY trening — na bazie
+ * ostatniej sesji. Zakres powtórzeń wywnioskowany z historii (jeśli stały)
+ * lub domyślny: 5–8 dla dużych bojów, 8–12 dla reszty.
+ */
+export function getProgressionSuggestion(exerciseId: string, unit: Unit) {
+  const ex = getExercise(exerciseId);
+  if (!ex) return null;
+  // Tylko ćwiczenia z ciężarem mają sens dla progresji ciężaru.
+  if (ex.inputType !== 'weight_reps' && ex.inputType !== 'weighted_bodyweight') return null;
+
+  const last = getLastPerformance(exerciseId).filter((s) => s.setType !== 'warmup');
+  const lastSets = last.map((s) => ({ weightKg: s.weight, reps: s.reps }));
+  if (lastSets.length === 0) return null;
+
+  const compound = isCompoundLift(exerciseId);
+  const repRangeMin = compound ? 5 : 8;
+  const repRangeMax = compound ? 8 : 12;
+
+  return nextProgression({
+    lastSets,
+    repRangeMin,
+    repRangeMax,
+    equipment: ex.equipment,
+    exerciseId,
+    unit,
+  });
 }
 
 // ===================== REKORDY =====================

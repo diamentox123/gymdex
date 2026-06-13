@@ -13,8 +13,8 @@ import { useTheme, Spacing, Radius } from '@/theme';
 import { getExerciseGuide, guideImageUrls } from '@/data/exercise-guide';
 import { LineProgressChart } from '@/components/Charts';
 import { getExercise, deleteExercise } from '@/db/repo-exercises';
-import { getExerciseProgress, getBestPR } from '@/db/repo-workouts';
-import { formatWeight } from '@/lib/format';
+import { getExerciseProgress, getBestPR, getProgressionSuggestion } from '@/db/repo-workouts';
+import { formatWeight, trimNumber } from '@/lib/format';
 import { useSettings } from '@/store/settings';
 import { displayWeight } from '@/lib/calc';
 
@@ -29,6 +29,7 @@ export default function ExerciseDetail() {
   const progress = useMemo(() => (id ? getExerciseProgress(String(id)) : []), [id]);
   const pr1rm = useMemo(() => (id ? getBestPR(String(id), '1rm') : null), [id]);
   const prWeight = useMemo(() => (id ? getBestPR(String(id), 'maxWeight') : null), [id]);
+  const suggestion = useMemo(() => (id ? getProgressionSuggestion(String(id), unit as never) : null), [id, unit]);
 
   if (!ex) {
     return (
@@ -75,6 +76,24 @@ export default function ExerciseDetail() {
             {cap(ex.bodyPart)} · {ex.equipment}
           </Text>
         </Card>
+
+        {/* Podpowiedź progresji na następny trening */}
+        {suggestion ? (
+          <Card style={[styles.suggestCard, { borderColor: suggestion.isIncrease ? c.success : c.primary }]}>
+            <View style={styles.suggestHead}>
+              <Icon name={suggestion.isIncrease ? 'trending-up' : 'remove'} size={18} color={suggestion.isIncrease ? c.success : c.primary} />
+              <Text variant="label" weight="800" color={suggestion.isIncrease ? c.success : c.primary}>
+                NASTĘPNY TRENING
+              </Text>
+            </View>
+            <Text variant="title" weight="800" style={{ marginTop: 4 }}>
+              {trimNumber(suggestion.weight)} {unit} × {suggestion.reps}
+            </Text>
+            <Text variant="caption" color={c.textSecondary} style={{ marginTop: 4 }}>
+              {suggestion.reason}
+            </Text>
+          </Card>
+        ) : null}
 
         {/* Instruktaż: zdjęcia pozycji + opis techniki */}
         {guide ? (
@@ -205,6 +224,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
   },
+  suggestCard: { marginTop: Spacing.lg, borderWidth: 1 },
+  suggestHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   frame: { width: 200 },
   frameImg: {
     width: 200,
