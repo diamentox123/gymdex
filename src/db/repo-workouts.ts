@@ -331,6 +331,94 @@ function detectAndStorePRs(exerciseId: string, workoutId: string, achievedAt: nu
   return newPRs;
 }
 
+/**
+ * Przelicza WSZYSTKIE rekordy życiowe od zera na podstawie pełnej historii.
+ * Potrzebne po imporcie danych (np. ze Strong) — zaimportowane treningi nie
+ * przechodzą przez `detectAndStorePRs`, więc bez tego Rekordy/1RM są puste.
+ * Czyści personal_records i flagi is_pr, po czym wyznacza dla KAŻDEGO
+ * ćwiczenia najlepszy szacowany 1RM i najcięższą serię.
+ *
+ * @returns liczba ćwiczeń, dla których ustanowiono rekordy.
+ */
+export function rebuildAllPRs(): number {
+  const db = getDb();
+
+  // Wszystkie ukończone, robocze serie z całej historii + data treningu.
+  const rows = db
+    .select({
+      setId: workoutSets.id,
+      weight: workoutSets.weight,
+      reps: workoutSets.reps,
+      setType: workoutSets.setType,
+      exerciseId: workoutExercises.exerciseId,
+      workoutId: workoutExercises.workoutId,
+      startedAt: workouts.startedAt,
+    })
+    .from(workoutSets)
+    .innerJoin(workoutExercises, eq(workoutSets.workoutExerciseId, workoutExercises.id))
+    .innerJoin(workouts, eq(workoutExercises.workoutId, workouts.id))
+    .where(eq(workoutSets.isCompleted, true))
+    .all();
+
+  interface Best {
+    e1rm: number;
+    e1rmSet: { weight: number; reps: number; workoutId: string; setId: string; at: number } | null;
+    maxWeight: number;
+    maxWeightSet: { weight: number; reps: number; workoutId: string; setId: string; at: number } | null;
+  }
+  const byExercise = new Map<string, Best>();
+
+  for (const r of rows) {
+    if (r.setType === 'warmup') continue;
+    const w = r.weight ?? 0;
+    const reps = r.reps ?? 0;
+    if (w <= 0 || reps <= 0) continue;
+
+    const e1rm = estimate1RM(w, reps);
+    let b = byExercise.get(r.exerciseId);
+    if (!b) {
+      b = { e1rm: 0, e1rmSet: null, maxWeight: 0, maxWeightSet: null };
+      byExercise.set(r.exerciseId, b);
+    }
+    const ref = { weight: w, reps, workoutId: r.workoutId, setId: r.setId, at: r.startedAt };
+    if (e1rm > b.e1rm) {
+      b.e1rm = e1rm;
+      b.e1rmSet = ref;
+    }
+    if (w > b.maxWeight) {
+      b.maxWeight = w;
+      b.maxWeightSet = ref;
+    }
+  }
+
+  db.transaction((tx) => {
+    // Reset: usuń wszystkie PR-y i zdejmij flagi is_pr.
+    tx.delete(personalRecords).run();
+    tx.update(workoutSets).set({ isPR: false }).run();
+
+    for (const [exerciseId, b] of byExercise) {
+      if (b.e1rmSet) {
+        tx.insert(personalRecords).values({
+          id: newId('pr'), exerciseId, type: '1rm', value: b.e1rm,
+          weight: b.e1rmSet.weight, reps: b.e1rmSet.reps,
+          workoutId: b.e1rmSet.workoutId, achievedAt: b.e1rmSet.at,
+        }).run();
+      }
+      if (b.maxWeightSet) {
+        tx.insert(personalRecords).values({
+          id: newId('pr'), exerciseId, type: 'maxWeight', value: b.maxWeight,
+          weight: b.maxWeightSet.weight, reps: b.maxWeightSet.reps,
+          workoutId: b.maxWeightSet.workoutId, achievedAt: b.maxWeightSet.at,
+        }).run();
+        // Oznacz serię rekordu ciężaru flagą is_pr.
+        tx.update(workoutSets).set({ isPR: true }).where(eq(workoutSets.id, b.maxWeightSet.setId)).run();
+      }
+    }
+  });
+
+  return byExercise.size;
+}
+
 /** Ustawia is_pr=1 na serii (z tego treningu) o danym ciężarze/powtórzeniach. */
 function markPRSet(workoutId: string, exerciseId: string, weight: number, reps: number) {
   const db = getDb();

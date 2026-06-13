@@ -15,6 +15,7 @@ import { OptionRow } from '@/components/OptionRow';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { useSettings } from '@/store/settings';
 import { getBodyMeasurements } from '@/db/repo-stats';
+import { rebuildAllPRs } from '@/db/repo-workouts';
 import { exportData, dataSummary, importData, exportWorkoutsCsv } from '@/db/backup';
 import { parseBackup } from '@/lib/backup-schema';
 import { formatWeight } from '@/lib/format';
@@ -94,10 +95,13 @@ export default function ProfileTab() {
           onPress: () => {
             try {
               importData(data);
+              // Po imporcie przelicz rekordy z całej historii — zaimportowane
+              // treningi nie przechodzą przez wykrywanie PR przy zapisie.
+              rebuildAllPRs();
               reloadSettings();
               setSummary(dataSummary());
               setMeasurements(getBodyMeasurements());
-              Alert.alert('Gotowe', 'Dane zostały przywrócone z kopii zapasowej.');
+              Alert.alert('Gotowe', 'Dane przywrócone, rekordy przeliczone z historii.');
             } catch (err) {
               Alert.alert('Błąd importu', err instanceof Error ? err.message : 'Nie udało się przywrócić danych.');
             }
@@ -132,6 +136,17 @@ export default function ProfileTab() {
       confirmAndImport(text, 'Wybrany plik jest pusty.');
     } catch (err) {
       Alert.alert('Import', err instanceof Error ? err.message : 'Nie udało się wczytać pliku.');
+    }
+  };
+
+  // Przelicza rekordy (1RM, najcięższa seria) z całej historii — przydatne po
+  // imporcie ze Strong, gdzie PR-y nie zostały policzone przy zapisie.
+  const onRebuildPRs = () => {
+    try {
+      const n = rebuildAllPRs();
+      Alert.alert('Rekordy przeliczone', `Przeanalizowano historię i wyznaczono rekordy dla ${n} ćwiczeń.`);
+    } catch (err) {
+      Alert.alert('Błąd', err instanceof Error ? err.message : 'Nie udało się przeliczyć rekordów.');
     }
   };
 
@@ -288,6 +303,19 @@ export default function ProfileTab() {
         />
         <Text variant="caption" color={c.textMuted} center style={{ marginTop: Spacing.sm }}>
           Eksport kopiuje całą bazę do schowka. Import wczytuje ją z pliku lub schowka i zastępuje obecne dane.
+        </Text>
+      </Section>
+
+      {/* Rekordy */}
+      <Section title="Rekordy">
+        <Button
+          title="Przelicz rekordy z historii"
+          variant="secondary"
+          icon={<Icon name="refresh-outline" size={18} color={c.text} />}
+          onPress={onRebuildPRs}
+        />
+        <Text variant="caption" color={c.textMuted} center style={{ marginTop: Spacing.sm }}>
+          Wylicza szacowany 1RM i najcięższe serie dla wszystkich ćwiczeń z całej historii. Użyj po imporcie danych ze Strong.
         </Text>
       </Section>
 
