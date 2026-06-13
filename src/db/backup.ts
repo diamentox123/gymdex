@@ -4,10 +4,59 @@
  * czyści i wczytuje je z powrotem. Walidacja formatu (czysta logika)
  * mieszka w `@/lib/backup-schema`.
  */
+import dayjs from 'dayjs';
 import { getRawDb } from './client';
 import { BACKUP_TABLES, BACKUP_VERSION, validateBackup, type BackupData } from '@/lib/backup-schema';
+import { buildCsv, type CsvSetRow } from '@/lib/csv-export';
+import { displayWeight } from '@/lib/calc';
+import type { Unit } from '@/lib/types';
 
 export type { BackupData };
+
+/**
+ * Eksport całej historii treningów do CSV (kompatybilny ze Strong/Excel).
+ * Ciężary w jednostce użytkownika. Jeden wiersz = jedna seria.
+ */
+export function exportWorkoutsCsv(unit: Unit): string {
+  const db = getRawDb();
+  const rows = db.getAllSync<{
+    started_at: number;
+    workout_name: string;
+    exercise_name: string;
+    order_index: number;
+    weight: number | null;
+    reps: number | null;
+    rpe: number | null;
+    distance_m: number | null;
+    duration_sec: number | null;
+    notes: string | null;
+  }>(
+    `SELECT w.started_at, w.name AS workout_name, e.name AS exercise_name,
+            ws.order_index, ws.weight, ws.reps, ws.rpe, ws.distance_m,
+            ws.duration_sec, ws.notes
+     FROM workout_sets ws
+     JOIN workout_exercises we ON ws.workout_exercise_id = we.id
+     JOIN workouts w ON we.workout_id = w.id
+     JOIN exercises e ON we.exercise_id = e.id
+     WHERE w.finished_at IS NOT NULL AND ws.is_completed = 1
+     ORDER BY w.started_at ASC, we.order_index ASC, ws.order_index ASC`
+  );
+
+  const csvRows: CsvSetRow[] = rows.map((r) => ({
+    date: dayjs(r.started_at).format('YYYY-MM-DD HH:mm:ss'),
+    workoutName: r.workout_name,
+    exerciseName: r.exercise_name,
+    setOrder: r.order_index + 1,
+    weight: r.weight != null ? Math.round(displayWeight(r.weight, unit) * 100) / 100 : null,
+    reps: r.reps,
+    rpe: r.rpe,
+    distance: r.distance_m,
+    seconds: r.duration_sec,
+    notes: r.notes ?? '',
+  }));
+
+  return buildCsv(csvRows);
+}
 
 /** Zrzuca całą bazę do obiektu JSON. */
 export function exportData(): BackupData {

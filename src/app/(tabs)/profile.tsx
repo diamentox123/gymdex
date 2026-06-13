@@ -15,7 +15,7 @@ import { OptionRow } from '@/components/OptionRow';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { useSettings } from '@/store/settings';
 import { getBodyMeasurements } from '@/db/repo-stats';
-import { exportData, dataSummary, importData } from '@/db/backup';
+import { exportData, dataSummary, importData, exportWorkoutsCsv } from '@/db/backup';
 import { parseBackup } from '@/lib/backup-schema';
 import { formatWeight } from '@/lib/format';
 import type { Unit, ThemeMode } from '@/lib/types';
@@ -48,6 +48,20 @@ export default function ProfileTab() {
       await Share.share({ message: data, title: 'Backup Panda Strength' });
     } catch {
       Alert.alert('Eksport', 'Dane skopiowano do schowka.');
+    }
+  };
+
+  const onExportCsv = async () => {
+    const csv = exportWorkoutsCsv(unit);
+    if (csv.split('\n').length <= 1) {
+      Alert.alert('Eksport CSV', 'Brak ukończonych treningów do wyeksportowania.');
+      return;
+    }
+    try {
+      await Clipboard.setStringAsync(csv);
+      await Share.share({ message: csv, title: 'Historia treningów (CSV)' });
+    } catch {
+      Alert.alert('Eksport CSV', 'Historia skopiowana do schowka (CSV).');
     }
   };
 
@@ -233,6 +247,13 @@ export default function ProfileTab() {
           variant="secondary"
           icon={<Icon name="download-outline" size={18} color={c.text} />}
           onPress={onExport}
+        />
+        <Button
+          title="Eksportuj historię (CSV)"
+          variant="secondary"
+          icon={<Icon name="grid-outline" size={18} color={c.text} />}
+          onPress={onExportCsv}
+          style={{ marginTop: Spacing.sm }}
         />
         <Button
           title="Importuj z pliku (.json)"
