@@ -219,6 +219,22 @@ export function getLastPerformance(exerciseId: string): PreviousSet[] {
 }
 
 /**
+ * Wolumen roboczy (kg) tego ćwiczenia z OSTATNIEGO ukończonego treningu —
+ * do porównania „% względem poprzedniego treningu" na żywo. Zwraca null gdy
+ * brak historii (ćwiczenie robione pierwszy raz).
+ */
+export function getLastExerciseVolume(exerciseId: string): number | null {
+  const last = getLastPerformance(exerciseId);
+  if (last.length === 0) return null;
+  let vol = 0;
+  for (const s of last) {
+    if (s.setType === 'warmup') continue;
+    vol += setVolume(s.weight ?? 0, s.reps ?? 0, s.setType);
+  }
+  return vol;
+}
+
+/**
  * Podpowiedź progresji dla ćwiczenia na NADCHODZĄCY trening — na bazie
  * ostatniej sesji. Zakres powtórzeń wywnioskowany z historii (jeśli stały)
  * lub domyślny: 5–8 dla dużych bojów, 8–12 dla reszty.

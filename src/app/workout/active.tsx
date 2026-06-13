@@ -19,7 +19,7 @@ import { WorkoutSummary } from '@/components/workout/WorkoutSummary';
 import { useWorkout } from '@/store/workout';
 import { useSettings } from '@/store/settings';
 import { liveTotals, buildWorkoutInput, hasCompletedSets } from '@/lib/workout-session';
-import { saveCompletedWorkout, type NewPR } from '@/db/repo-workouts';
+import { saveCompletedWorkout, getLastExerciseVolume, type NewPR } from '@/db/repo-workouts';
 import { formatDuration, formatVolume, formatSetsCount } from '@/lib/format';
 import { hapticTick } from '@/lib/haptics';
 import { scheduleRestDone, ensureNotificationPermission } from '@/lib/notifications';
@@ -52,7 +52,7 @@ export default function ActiveWorkout() {
   const unit = useSettings((s) => s.settings?.unit ?? 'kg');
 
   const [now, setNow] = useState(Date.now());
-  const [summary, setSummary] = useState<{ prs: NewPR[]; durationSec: number } | null>(null);
+  const [summary, setSummary] = useState<{ prs: NewPR[]; durationSec: number; prevVolume: number | null; exerciseCount: number } | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
 
   // Czy ekran zainicjalizował już sesję — i czy właśnie ją zamykamy.
@@ -135,11 +135,26 @@ export default function ActiveWorkout() {
       return;
     }
     const finishedAt = Date.now();
+    // Wolumen poprzednich treningów tych ćwiczeń — PRZED zapisem (potem „ostatni"
+    // trening to już ten bieżący). Suma po unikalnych ćwiczeniach sesji.
+    const prevByExercise = new Map<string, number>();
+    for (const ex of exercises) {
+      if (!prevByExercise.has(ex.exerciseId)) {
+        prevByExercise.set(ex.exerciseId, getLastExerciseVolume(ex.exerciseId) ?? 0);
+      }
+    }
+    const prevVolumeTotal = [...prevByExercise.values()].reduce((a, b) => a + b, 0);
+
     const input = buildWorkoutInput(name, startedAt ?? finishedAt, finishedAt, routineId, exercises, unit as never, notes);
     const { workoutId, newPRs } = saveCompletedWorkout(input);
     // Celebracja haptyczna jest w WorkoutSummary (rozróżnia rekord vs zwykły zapis).
     setSavedId(workoutId);
-    setSummary({ prs: newPRs, durationSec: Math.round((finishedAt - (startedAt ?? finishedAt)) / 1000) });
+    setSummary({
+      prs: newPRs,
+      durationSec: Math.round((finishedAt - (startedAt ?? finishedAt)) / 1000),
+      prevVolume: prevVolumeTotal > 0 ? prevVolumeTotal : null,
+      exerciseCount: exercises.length,
+    });
   };
 
   const confirmCancel = () => {
@@ -285,6 +300,8 @@ export default function ActiveWorkout() {
           durationSec={summary.durationSec}
           volume={totals.volume}
           sets={totals.completedSets}
+          exerciseCount={summary.exerciseCount}
+          prevVolume={summary.prevVolume}
           prs={summary.prs}
           workoutId={savedId}
           onClose={closeSummary}

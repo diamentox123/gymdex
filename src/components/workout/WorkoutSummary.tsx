@@ -7,7 +7,7 @@ import { View, Modal, ScrollView, StyleSheet } from 'react-native';
 import { Text, Button, Divider } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
-import { formatWorkoutLength, formatVolume, formatSetsCount, formatWeight } from '@/lib/format';
+import { formatWorkoutLength, formatVolume, formatWeight } from '@/lib/format';
 import { useSettings } from '@/store/settings';
 import { getExercise } from '@/db/repo-exercises';
 import { hapticSuccess, hapticTick } from '@/lib/haptics';
@@ -24,6 +24,8 @@ export function WorkoutSummary({
   durationSec,
   volume,
   sets,
+  exerciseCount,
+  prevVolume,
   prs,
   workoutId,
   onClose,
@@ -32,6 +34,8 @@ export function WorkoutSummary({
   durationSec: number;
   volume: number;
   sets: number;
+  exerciseCount?: number;
+  prevVolume?: number | null;
   prs: NewPR[];
   workoutId: string | null;
   onClose: () => void;
@@ -39,6 +43,10 @@ export function WorkoutSummary({
   const { c } = useTheme();
   const unit = useSettings((s) => s.settings?.unit ?? 'kg');
   const hasPRs = prs.length > 0;
+  const volumeDelta =
+    prevVolume != null && prevVolume > 0 && volume > 0
+      ? Math.round(((volume - prevVolume) / prevVolume) * 100)
+      : null;
 
   // Celebracja: mocniejsza haptyka gdy padły rekordy.
   useEffect(() => {
@@ -71,8 +79,23 @@ export function WorkoutSummary({
           <View style={[styles.stats, { borderColor: c.border }]}>
             <Stat label="Czas" value={formatWorkoutLength(durationSec)} />
             <Stat label="Wolumen" value={formatVolume(volume, unit as never)} />
-            <Stat label="Serie" value={formatSetsCount(sets)} />
+            <Stat label="Serie" value={String(sets)} />
+            {exerciseCount != null ? <Stat label="Ćwiczenia" value={String(exerciseCount)} /> : null}
           </View>
+
+          {volumeDelta != null ? (
+            <View style={[styles.deltaRow, { backgroundColor: (volumeDelta >= 0 ? c.success : c.danger) + '18' }]}>
+              <Icon
+                name={volumeDelta > 0 ? 'trending-up' : volumeDelta < 0 ? 'trending-down' : 'remove'}
+                size={18}
+                color={volumeDelta >= 0 ? c.success : c.danger}
+              />
+              <Text variant="body" weight="700" color={volumeDelta >= 0 ? c.success : c.danger}>
+                {volumeDelta > 0 ? '+' : ''}
+                {volumeDelta}% wolumenu vs poprzedni trening
+              </Text>
+            </View>
+          ) : null}
 
           {prs.length > 0 ? (
             <>
@@ -163,6 +186,15 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  deltaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.lg,
   },
   prHeader: {
     flexDirection: 'row',

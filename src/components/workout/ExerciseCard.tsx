@@ -13,7 +13,8 @@ import { useWorkout, type LiveExercise } from '@/store/workout';
 import { useSettings } from '@/store/settings';
 import { fieldsForInputType, supportsPlateCalc, weightColumnLabel } from '@/lib/input-schema';
 import { toKg } from '@/lib/calc';
-import { getProgressionSuggestion } from '@/db/repo-workouts';
+import { getProgressionSuggestion, getLastExerciseVolume } from '@/db/repo-workouts';
+import { liveTotals } from '@/lib/workout-session';
 import { trimNumber } from '@/lib/format';
 
 export function ExerciseCard({
@@ -52,6 +53,22 @@ export function ExerciseCard({
     }
   }, [ex.exerciseId, unit]);
 
+  // Wolumen poprzedniego treningu tego ćwiczenia (kg) — do porównania %.
+  const prevVolume = useMemo(() => {
+    try {
+      return getLastExerciseVolume(ex.exerciseId);
+    } catch {
+      return null;
+    }
+  }, [ex.exerciseId]);
+
+  // Bieżący wolumen ćwiczenia (z ukończonych serii) i % zmiany vs poprzednio.
+  const currentVolume = liveTotals([ex], unit as never).volume;
+  const volumeDelta =
+    prevVolume != null && prevVolume > 0 && currentVolume > 0
+      ? Math.round(((currentVolume - prevVolume) / prevVolume) * 100)
+      : null;
+
   return (
     <View
       style={[
@@ -83,6 +100,28 @@ export function ExerciseCard({
             </View>
           ) : null}
         </View>
+        {volumeDelta != null ? (
+          <View
+            style={[
+              styles.deltaPill,
+              { backgroundColor: (volumeDelta > 0 ? c.success : volumeDelta < 0 ? c.danger : c.textMuted) + '22' },
+            ]}
+          >
+            <Icon
+              name={volumeDelta > 0 ? 'arrow-up' : volumeDelta < 0 ? 'arrow-down' : 'remove'}
+              size={12}
+              color={volumeDelta > 0 ? c.success : volumeDelta < 0 ? c.danger : c.textMuted}
+            />
+            <Text
+              variant="caption"
+              weight="800"
+              color={volumeDelta > 0 ? c.success : volumeDelta < 0 ? c.danger : c.textMuted}
+            >
+              {volumeDelta > 0 ? '+' : ''}
+              {volumeDelta}%
+            </Text>
+          </View>
+        ) : null}
         <Pressable onPress={() => setMenuOpen((o) => !o)} hitSlop={8} style={styles.menuBtn}>
           <Icon name="ellipsis-horizontal" size={20} color={c.textSecondary} />
         </Pressable>
@@ -217,6 +256,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginTop: 2,
+  },
+  deltaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+    marginRight: Spacing.xs,
   },
   menu: {
     borderRadius: Radius.md,
