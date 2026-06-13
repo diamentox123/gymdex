@@ -6,6 +6,7 @@ import {
   workoutExercises,
   workoutSets,
   bodyMeasurements,
+  personalRecords,
   type BodyMeasurementRow,
 } from './schema';
 import { newId } from '@/lib/id';
@@ -134,6 +135,76 @@ export function getBest1RM(exerciseId: string): number {
     if (w > 0 && reps > 0) best = Math.max(best, estimate1RM(w, reps));
   }
   return best;
+}
+
+// ===================== OSIĄGNIĘCIA / STREAKI =====================
+
+export interface WorkoutBrief {
+  startedAt: number;
+  volume: number;
+  sets: number;
+  durationSec: number;
+}
+
+/**
+ * Lekka lista ukończonych treningów (data + wolumen + serie) do analizy
+ * streaków, częstotliwości i osiągnięć. Jedno zapytanie, agregacja w pamięci.
+ */
+export function getWorkoutBriefs(): WorkoutBrief[] {
+  const db = getDb();
+  const done = db
+    .select({ id: workouts.id, startedAt: workouts.startedAt, durationSec: workouts.durationSec })
+    .from(workouts)
+    .where(isNotNull(workouts.finishedAt))
+    .all();
+
+  const setRows = db
+    .select({
+      workoutId: workoutExercises.workoutId,
+      weight: workoutSets.weight,
+      reps: workoutSets.reps,
+      setType: workoutSets.setType,
+    })
+    .from(workoutSets)
+    .innerJoin(workoutExercises, eq(workoutSets.workoutExerciseId, workoutExercises.id))
+    .where(eq(workoutSets.isCompleted, true))
+    .all();
+
+  const agg = new Map<string, { volume: number; sets: number }>();
+  for (const r of setRows) {
+    if (r.setType === 'warmup') continue;
+    const a = agg.get(r.workoutId) ?? { volume: 0, sets: 0 };
+    a.volume += setVolume(r.weight ?? 0, r.reps ?? 0, r.setType as SetType);
+    a.sets += 1;
+    agg.set(r.workoutId, a);
+  }
+
+  return done.map((d) => ({
+    startedAt: d.startedAt,
+    durationSec: d.durationSec ?? 0,
+    volume: agg.get(d.id)?.volume ?? 0,
+    sets: agg.get(d.id)?.sets ?? 0,
+  }));
+}
+
+/** Łączna liczba pobitych rekordów życiowych (wszystkie typy). */
+export function getTotalPRCount(): number {
+  const r = getDb().select({ c: workouts.id }).from(personalRecords).all();
+  return r.length;
+}
+
+/** Czy istnieje trening rozpoczęty przed 7:00 / po 21:00 (osiągnięcia klimatyczne). */
+export function getTimeOfDayFlags(): { earlyBird: boolean; nightOwl: boolean } {
+  const db = getDb();
+  const rows = db.select({ startedAt: workouts.startedAt }).from(workouts).where(isNotNull(workouts.finishedAt)).all();
+  let earlyBird = false;
+  let nightOwl = false;
+  for (const r of rows) {
+    const h = new Date(r.startedAt).getHours();
+    if (h < 7) earlyBird = true;
+    if (h >= 21) nightOwl = true;
+  }
+  return { earlyBird, nightOwl };
 }
 
 // ===================== POMIARY CIAŁA =====================

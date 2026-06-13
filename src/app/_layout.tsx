@@ -34,6 +34,8 @@ function Navigator() {
         <Stack.Screen name="workout/[id]" options={{ title: 'Trening' }} />
         <Stack.Screen name="routine/edit" options={{ presentation: 'modal', title: 'Rutyna' }} />
         <Stack.Screen name="exercise/[id]" options={{ title: 'Ćwiczenie' }} />
+        <Stack.Screen name="achievements" options={{ title: 'Osiągnięcia' }} />
+        <Stack.Screen name="tools" options={{ title: 'Narzędzia' }} />
         <Stack.Screen name="exercise/picker" options={{ presentation: 'modal', title: 'Dodaj ćwiczenie' }} />
         <Stack.Screen name="exercise/new" options={{ presentation: 'modal', title: 'Nowe ćwiczenie' }} />
         <Stack.Screen name="measurement/new" options={{ presentation: 'modal', title: 'Pomiar ciała' }} />

@@ -3,12 +3,12 @@
  * w czasie, wolumen wg partii oraz Strength Score (siła względna).
  */
 import React, { useState, useCallback } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet, Pressable } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import dayjs from 'dayjs';
 import { Text, Card, EmptyState, Button } from '@/components/ui';
 import { Icon } from '@/components/Icon';
-import { useTheme, Spacing } from '@/theme';
+import { useTheme, Spacing, Radius } from '@/theme';
 import { LineProgressChart, SimpleBarChart } from '@/components/Charts';
 import {
   getOverallStats,
@@ -82,6 +82,12 @@ export default function StatsTab() {
         <Tile icon="barbell" value={formatVolume(stats.totalVolume, unit as never)} label="całk. wolumen" />
         <Tile icon="layers" value={String(stats.totalSets)} label="serii" />
         <Tile icon="time" value={formatWorkoutLength(stats.totalDurationSec)} label="łącznie czasu" />
+      </View>
+
+      {/* Skróty do osiągnięć i narzędzi */}
+      <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+        <NavTile icon="medal" label="Osiągnięcia" onPress={() => router.push('/achievements')} />
+        <NavTile icon="calculator" label="Narzędzia" onPress={() => router.push('/tools')} />
       </View>
 
       {/* Strength Score */}
@@ -178,6 +184,35 @@ function Tile({ icon, value, label }: { icon: React.ComponentProps<typeof Icon>[
         {label}
       </Text>
     </Card>
+  );
+}
+
+function NavTile({ icon, label, onPress }: { icon: React.ComponentProps<typeof Icon>['name']; label: string; onPress: () => void }) {
+  const { c } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        backgroundColor: c.surface,
+        borderRadius: Radius.lg,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: c.border,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Icon name={icon} size={20} color={c.primary} />
+      <Text variant="body" weight="700">
+        {label}
+      </Text>
+      <View style={{ flex: 1 }} />
+      <Icon name="chevron-forward" size={18} color={c.textMuted} />
+    </Pressable>
   );
 }
 
