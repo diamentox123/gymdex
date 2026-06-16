@@ -125,6 +125,7 @@ export const settings = sqliteTable('settings', {
   theme: text('theme').notNull().default('system'),
   restDefaultSec: integer('rest_default_sec').notNull().default(120),
   restAutoStart: integer('rest_auto_start', { mode: 'boolean' }).notNull().default(true),
+  restSound: integer('rest_sound', { mode: 'boolean' }).notNull().default(true),
   barWeightKg: real('bar_weight_kg').notNull().default(20),
   hapticsEnabled: integer('haptics_enabled', { mode: 'boolean' }).notNull().default(true),
   weeklyGoal: integer('weekly_goal').notNull().default(4),

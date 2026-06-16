@@ -4,18 +4,20 @@
  */
 import React, { useState, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Text, Divider } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { SetRow } from './SetRow';
 import { PlateCalculator } from './PlateCalculator';
+import { RestEditor } from './RestEditor';
 import { useWorkout, type LiveExercise } from '@/store/workout';
 import { useSettings } from '@/store/settings';
 import { fieldsForInputType, supportsPlateCalc, weightColumnLabel } from '@/lib/input-schema';
 import { toKg } from '@/lib/calc';
 import { getProgressionSuggestion, getLastExerciseVolume } from '@/db/repo-workouts';
 import { liveTotals } from '@/lib/workout-session';
-import { trimNumber } from '@/lib/format';
+import { trimNumber, formatDuration } from '@/lib/format';
 
 export function ExerciseCard({
   ex,
@@ -30,8 +32,10 @@ export function ExerciseCard({
   onAddSet?: () => void;
 }) {
   const { c } = useTheme();
+  const router = useRouter();
   const unit = useSettings((s) => s.settings?.unit ?? 'kg');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
   const [plateFor, setPlateFor] = useState<number | null>(null);
 
   const updateSet = useWorkout((s) => s.updateSet);
@@ -41,6 +45,9 @@ export function ExerciseCard({
   const removeExercise = useWorkout((s) => s.removeExercise);
   const reorder = useWorkout((s) => s.reorderExercise);
   const toggleSuperset = useWorkout((s) => s.toggleSuperset);
+  const setExerciseRest = useWorkout((s) => s.setExerciseRest);
+
+  const openGuide = () => router.push({ pathname: '/exercise/[id]', params: { id: ex.exerciseId } });
 
   const fields = fieldsForInputType(ex.inputType);
   const canPlate = supportsPlateCalc(ex.inputType);
@@ -88,9 +95,13 @@ export function ExerciseCard({
               SUPERSERIA
             </Text>
           ) : null}
-          <Text variant="heading" color={c.primary} numberOfLines={2}>
-            {ex.name}
-          </Text>
+          {/* Klik w nazwę → opis ćwiczenia i instrukcja „jak wykonać". */}
+          <Pressable onPress={openGuide} style={styles.nameRow} hitSlop={6}>
+            <Text variant="heading" color={c.primary} numberOfLines={2} style={{ flexShrink: 1 }}>
+              {ex.name}
+            </Text>
+            <Icon name="information-circle-outline" size={16} color={c.textSecondary} />
+          </Pressable>
           {suggestion ? (
             <View style={styles.target}>
               <Icon name={suggestion.isIncrease ? 'trending-up' : 'flag'} size={12} color={suggestion.isIncrease ? c.success : c.textSecondary} />
@@ -194,6 +205,30 @@ export function ExerciseCard({
         </View>
       ))}
 
+      {/* Pasek przerwy między seriami — klik otwiera edytor długości. */}
+      <Pressable
+        onPress={() => setRestOpen((o) => !o)}
+        style={[styles.restBar, { borderColor: c.border }]}
+        hitSlop={4}
+      >
+        <Icon name="timer-outline" size={16} color={c.primary} />
+        <Text variant="label" color={c.textSecondary}>
+          Przerwa między seriami:
+        </Text>
+        <Text variant="label" weight="800" color={c.text}>
+          {ex.restSeconds > 0 ? formatDuration(ex.restSeconds) : 'wył.'}
+        </Text>
+        <Icon name={restOpen ? 'chevron-up' : 'chevron-down'} size={14} color={c.textMuted} />
+      </Pressable>
+
+      {restOpen ? (
+        <RestEditor
+          seconds={ex.restSeconds}
+          onChange={(s) => setExerciseRest(ex.id, s)}
+          onClose={() => setRestOpen(false)}
+        />
+      ) : null}
+
       {/* Dodaj serię */}
       <Pressable
         onPress={() => { addSet(ex.id); onAddSet?.(); }}
@@ -248,6 +283,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: Spacing.sm,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   menuBtn: {
     padding: Spacing.xs,
   },
@@ -297,6 +337,15 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 2,
     paddingHorizontal: Spacing.sm,
+  },
+  restBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    marginTop: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   addSet: {
     flexDirection: 'row',

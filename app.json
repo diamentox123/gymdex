@@ -12,7 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pandastrength.app",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -47,7 +49,8 @@
         {
           "color": "#FF6B2C"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

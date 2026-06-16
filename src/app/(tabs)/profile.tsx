@@ -222,6 +222,12 @@ export default function ProfileTab() {
         />
         <Divider style={{ marginVertical: Spacing.sm }} />
         <ToggleRow
+          label="Dźwięk końca przerwy"
+          value={settings?.restSound ?? true}
+          onChange={(v) => update({ restSound: v })}
+        />
+        <Divider style={{ marginVertical: Spacing.sm }} />
+        <ToggleRow
           label="Wibracje (haptyka)"
           value={settings?.hapticsEnabled ?? true}
           onChange={(v) => update({ hapticsEnabled: v })}

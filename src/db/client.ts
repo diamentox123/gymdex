@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS settings (
   theme TEXT NOT NULL DEFAULT 'system',
   rest_default_sec INTEGER NOT NULL DEFAULT 120,
   rest_auto_start INTEGER NOT NULL DEFAULT 1,
+  rest_sound INTEGER NOT NULL DEFAULT 1,
   bar_weight_kg REAL NOT NULL DEFAULT 20,
   haptics_enabled INTEGER NOT NULL DEFAULT 1,
   weekly_goal INTEGER NOT NULL DEFAULT 4
@@ -167,6 +168,7 @@ function runMigrations(sqlite: SQLiteDatabase) {
     }
   };
   addColumn('ALTER TABLE settings ADD COLUMN weekly_goal INTEGER NOT NULL DEFAULT 4');
+  addColumn('ALTER TABLE settings ADD COLUMN rest_sound INTEGER NOT NULL DEFAULT 1');
 }
 
 /** Surowy uchwyt SQLite — dla operacji wsadowych (seed, eksport). */
@@ -211,8 +213,8 @@ function seedIfEmpty(sqlite: SQLiteDatabase) {
 
   // Zawsze upewnij się, że istnieje wiersz ustawień.
   sqlite.runSync(
-    `INSERT OR IGNORE INTO settings (id, unit, language, theme, rest_default_sec, rest_auto_start, bar_weight_kg, haptics_enabled, weekly_goal)
-     VALUES ('app', 'kg', 'pl', 'system', 120, 1, 20, 1, 4)`
+    `INSERT OR IGNORE INTO settings (id, unit, language, theme, rest_default_sec, rest_auto_start, rest_sound, bar_weight_kg, haptics_enabled, weekly_goal)
+     VALUES ('app', 'kg', 'pl', 'system', 120, 1, 1, 20, 1, 4)`
   );
 }
 

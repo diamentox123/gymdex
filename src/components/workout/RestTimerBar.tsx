@@ -9,15 +9,18 @@ import { Text } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { useTheme, Spacing, Radius } from '@/theme';
 import { useWorkout } from '@/store/workout';
+import { useSettings } from '@/store/settings';
 import { formatDuration } from '@/lib/format';
 import { hapticSuccess, hapticTick } from '@/lib/haptics';
 import { cancelRestNotification } from '@/lib/notifications';
+import { playRestDone } from '@/lib/sound';
 
 export function RestTimerBar() {
   const { c } = useTheme();
   const rest = useWorkout((s) => s.rest);
   const stopRest = useWorkout((s) => s.stopRest);
   const addRestTime = useWorkout((s) => s.addRestTime);
+  const soundOn = useSettings((s) => s.settings?.restSound ?? true);
   const [now, setNow] = useState(Date.now());
   const firedRef = useRef(false);
   const lastTickRef = useRef<number>(-1);
@@ -44,11 +47,14 @@ export function RestTimerBar() {
     if (rest.active && remaining === 0 && !firedRef.current) {
       firedRef.current = true;
       hapticSuccess();
+      // Dźwięk „następna seria" — słyszalny też gdy apka jest na wierzchu
+      // (samo powiadomienie systemowe gra tylko w tle). Gra w słuchawkach.
+      if (soundOn) void playRestDone();
       // Krótkie opóźnienie, by użytkownik zobaczył „0:00", potem chowamy.
       const t = setTimeout(() => stopRest(), 800);
       return () => clearTimeout(t);
     }
-  }, [rest.active, remaining, stopRest]);
+  }, [rest.active, remaining, stopRest, soundOn]);
 
   if (!rest.active) return null;
 

@@ -157,6 +157,13 @@ export default function ActiveWorkout() {
     });
   };
 
+  // Minimalizacja — wyjdź do aplikacji, ale ZACHOWAJ aktywną sesję.
+  // Na ekranie głównym jest karta „Wróć do treningu", więc nic nie ginie.
+  const minimize = () => {
+    closingRef.current = true;
+    router.back();
+  };
+
   const confirmCancel = () => {
     Alert.alert('Odrzucić trening?', 'Niezapisane serie zostaną utracone.', [
       { text: 'Anuluj', style: 'cancel' },
@@ -180,31 +187,19 @@ export default function ActiveWorkout() {
   };
 
   // Przechwyć wyjście z ekranu (gest wstecz, sprzętowy przycisk Androida,
-  // programowy back). Jeśli to nasze świadome zamknięcie (closingRef) —
-  // przepuść. W przeciwnym razie zapytaj: odrzucić czy zostawić w tle.
+  // programowy back). Domyślnie MINIMALIZUJEMY — trening leci dalej, a na
+  // ekranie głównym jest karta „Wróć do treningu". Dzięki temu można swobodnie
+  // przeglądać aplikację w trakcie treningu bez pytań i bez utraty danych.
+  // Wyjątek: pusty trening (0 ćwiczeń) — nie ma czego zachowywać, więc cicho
+  // anulujemy, by nie zostawić „pustego treningu w toku".
   useEffect(() => {
     const sub = navigation.addListener('beforeRemove', (e) => {
-      if (closingRef.current) return; // zapis / odrzucenie / zamknięcie podsumowania
-      e.preventDefault();
-      Alert.alert('Opuścić trening?', 'Trening jest w toku. Co chcesz zrobić?', [
-        { text: 'Anuluj', style: 'cancel' },
-        {
-          text: 'Zostaw w tle',
-          onPress: () => {
-            closingRef.current = true;
-            navigation.dispatch(e.data.action); // wyjdź, ale zachowaj aktywną sesję
-          },
-        },
-        {
-          text: 'Odrzuć trening',
-          style: 'destructive',
-          onPress: () => {
-            closingRef.current = true;
-            cancel();
-            navigation.dispatch(e.data.action);
-          },
-        },
-      ]);
+      if (closingRef.current) return; // świadome: minimize / zapis / odrzucenie
+      closingRef.current = true;
+      if (useWorkout.getState().exercises.length === 0) {
+        cancel(); // pusty trening — nie ma sensu trzymać w tle
+      }
+      // w przeciwnym razie po prostu wyjdź, zachowując sesję (minimalizacja)
     });
     return sub;
   }, [navigation, cancel]);
@@ -213,8 +208,8 @@ export default function ActiveWorkout() {
     <View style={[styles.container, { backgroundColor: c.bg, paddingTop: insets.top }]}>
       {/* Górny pasek */}
       <View style={styles.topBar}>
-        <Pressable onPress={confirmCancel} hitSlop={8} style={styles.iconBtn}>
-          <Icon name="close" size={26} color={c.textSecondary} />
+        <Pressable onPress={minimize} hitSlop={8} style={styles.iconBtn}>
+          <Icon name="chevron-down" size={28} color={c.textSecondary} />
         </Pressable>
         <View style={styles.timerWrap}>
           <Icon name="time-outline" size={16} color={c.primary} />

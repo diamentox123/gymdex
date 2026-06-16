@@ -14,6 +14,7 @@ import { getDb } from '@/db/client';
 import { useSettings } from '@/store/settings';
 import { AppThemeProvider, useTheme } from '@/theme';
 import { configureNotifications, ensureNotificationPermission } from '@/lib/notifications';
+import { warmUpSounds } from '@/lib/sound';
 
 function Navigator() {
   const { c, dark } = useTheme();
@@ -59,6 +60,8 @@ export default function RootLayout() {
       // Powiadomienia o końcu odpoczynku (lokalne — działają w Expo Go).
       configureNotifications();
       ensureNotificationPermission();
+      // Wstępne załadowanie efektu dźwiękowego (by 1. odtworzenie nie lagowało).
+      warmUpSounds();
     } finally {
       setReady(true);
     }
