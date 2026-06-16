@@ -13,6 +13,9 @@ on:
     paths:
       - '.github/workflows/unsigned-ipa.yml'
 
+permissions:
+  contents: write   # potrzebne, by workflow mógł tworzyć/aktualizować Release (SideSource)
+
 jobs:
   build:
     runs-on: macos-latest
@@ -75,3 +78,81 @@ jobs:
           name: PandaStrength-unsigned-ipa
           path: ${{ runner.temp }}/PandaStrength-unsigned.ipa
           retention-days: 14
+
+      # ---- SideSource: stały URL + manifest, by SideStore pokazywał "Update" ----
+
+      - name: Przygotuj plik .ipa pod stałą nazwą + policz rozmiar/wersję
+        id: pkg
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          cp "$RUNNER_TEMP/PandaStrength-unsigned.ipa" "$RUNNER_TEMP/release/PandaStrength.ipa"
+          SIZE=$(stat -f%z "$RUNNER_TEMP/release/PandaStrength.ipa")
+          # Wersja: RRRR.M.D.<numer_runu> — data dla czytelności + run jako gwarancja rosnącej wersji
+          DATESTAMP=$(date -u +%Y.%-m.%-d)
+          VERSION="${DATESTAMP}.${GITHUB_RUN_NUMBER}"
+          ISO_DATE=$(date -u +%Y-%m-%d)
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "iso_date=$ISO_DATE" >> "$GITHUB_OUTPUT"
+          echo "Wersja: $VERSION | rozmiar: $SIZE B | data: $ISO_DATE"
+
+      - name: Wygeneruj manifest SideSource (apps.json)
+        env:
+          REPO: ${{ github.repository }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          SIZE: ${{ steps.pkg.outputs.size }}
+          ISO_DATE: ${{ steps.pkg.outputs.iso_date }}
+        run: |
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/PandaStrength.ipa"
+          ICON_URL="https://raw.githubusercontent.com/${REPO}/master/assets/images/icon.png"
+          SOURCE_URL="https://github.com/${REPO}/releases/latest/download/apps.json"
+          node -e '
+            const fs = require("fs");
+            const { VERSION, SIZE, ISO_DATE } = process.env;
+            const downloadURL = process.env.DOWNLOAD_URL;
+            const version = {
+              version: VERSION,
+              date: ISO_DATE,
+              localizedDescription: "Najnowszy build GymDex (Panda Strength).",
+              downloadURL,
+              size: Number(SIZE),
+              minOSVersion: "15.0"
+            };
+            const app = {
+              name: "GymDex",
+              bundleIdentifier: "com.pandastrength.app",
+              developerName: "diamentox123",
+              subtitle: "Trening siłowy — offline tracker",
+              localizedDescription: "Panda Strength / GymDex — śledzenie treningu siłowego. Offline, dane w telefonie.",
+              iconURL: process.env.ICON_URL,
+              tintColor: "FF6B2C",
+              // SideStore wymaga downloadURL/size/version na poziomie apki (nie tylko w versions[]):
+              downloadURL,
+              size: Number(SIZE),
+              version: VERSION,
+              versions: [version]
+            };
+            const source = {
+              name: "GymDex (Panda Strength)",
+              identifier: "com.pandastrength.source",
+              sourceURL: process.env.SOURCE_URL,
+              apps: [app],
+              news: []
+            };
+            fs.writeFileSync(process.env.RUNNER_TEMP + "/release/apps.json", JSON.stringify(source, null, 2));
+            console.log(JSON.stringify(source, null, 2));
+          '
+
+      - name: Opublikuj Release (tag "latest", nadpisywany)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: GymDex — najnowszy build
+          body: |
+            Niepodpisany .ipa do instalacji przez SideStore.
+            Wersja: ${{ steps.pkg.outputs.version }}
+            Źródło SideStore (dodaj RAZ w My Apps → Sources → +):
+            https://github.com/${{ github.repository }}/releases/latest/download/apps.json
+          files: |
+            ${{ runner.temp }}/release/PandaStrength.ipa
+            ${{ runner.temp }}/release/apps.json
