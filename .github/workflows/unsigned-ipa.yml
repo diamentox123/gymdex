@@ -103,13 +103,13 @@ jobs:
           SIZE: ${{ steps.pkg.outputs.size }}
           ISO_DATE: ${{ steps.pkg.outputs.iso_date }}
         run: |
-          DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/PandaStrength.ipa"
-          ICON_URL="https://raw.githubusercontent.com/${REPO}/master/assets/images/icon.png"
-          SOURCE_URL="https://github.com/${REPO}/releases/latest/download/apps.json"
           node -e '
             const fs = require("fs");
-            const { VERSION, SIZE, ISO_DATE } = process.env;
-            const downloadURL = process.env.DOWNLOAD_URL;
+            const { REPO, VERSION, SIZE, ISO_DATE } = process.env;
+            // URL-e budujemy TU, z REPO (env), żeby node na pewno je widział.
+            const downloadURL = "https://github.com/" + REPO + "/releases/latest/download/PandaStrength.ipa";
+            const iconURL = "https://raw.githubusercontent.com/" + REPO + "/master/assets/images/icon.png";
+            const sourceURL = "https://github.com/" + REPO + "/releases/latest/download/apps.json";
             const version = {
               version: VERSION,
               date: ISO_DATE,
@@ -124,9 +124,9 @@ jobs:
               developerName: "diamentox123",
               subtitle: "Trening siłowy — offline tracker",
               localizedDescription: "Panda Strength / GymDex — śledzenie treningu siłowego. Offline, dane w telefonie.",
-              iconURL: process.env.ICON_URL,
+              iconURL,
               tintColor: "FF6B2C",
-              // SideStore wymaga downloadURL/size/version na poziomie apki (nie tylko w versions[]):
+              // SideStore wymaga downloadURL/size/version/iconURL na poziomie apki (nie tylko w versions[]):
               downloadURL,
               size: Number(SIZE),
               version: VERSION,
@@ -135,7 +135,7 @@ jobs:
             const source = {
               name: "GymDex (Panda Strength)",
               identifier: "com.pandastrength.source",
-              sourceURL: process.env.SOURCE_URL,
+              sourceURL,
               apps: [app],
               news: []
             };
